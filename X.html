@@ -1,1 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>X - My Space</title>
+<style>
+:root{--bg:linear-gradient(160deg,#1b2234,#2d3752 45%,#4a4063);--glass:rgba(255,255,255,.14);--bd:rgba(255,255,255,.22);--tx:#fff;--sub:rgba(255,255,255,.78)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;background:var(--bg);color:var(--tx);min-height:100dvh;display:flex;justify-content:center;overflow-x:hidden}
+.frame{width:100%;max-width:430px;height:100dvh;padding:44px 18px 20px;display:flex;flex-direction:column;overflow:hidden}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}.screen.active{display:flex}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--bd);margin-bottom:10px;flex-shrink:0;gap:6px}
+.btn{background:var(--glass);border:1px solid var(--bd);color:var(--tx);padding:6px 11px;border-radius:999px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-shrink:0}
+.tab{flex:1;background:rgba(255,255,255,.08);border:1px solid var(--bd);color:var(--sub);padding:7px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer}
+.tab.active{background:rgba(255,255,255,.26);color:var(--tx)}
+.feed{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
+.card{background:var(--glass);border:1px solid var(--bd);border-radius:16px;padding:12px 14px;display:flex;gap:10px}
+.av{border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.flex1{flex:1;min-width:0}.row{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.name{font-size:14px;font-weight:700}.time,.sub{font-size:11px;color:var(--sub)}
+.txt{font-size:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word;margin:4px 0 8px}
+.chip{background:rgba(255,255,255,.14);border:1px solid var(--bd);color:var(--tx);border-radius:999px;padding:4px 10px;font-size:11px;cursor:pointer;display:inline-flex;align-items:center}
+.chip.liked{background:rgba(244,63,94,.38);border-color:rgba(251,113,133,.75);color:#ffe4e6}
+.xdel{background:none;border:none;color:var(--sub);font-size:13px;cursor:pointer;padding:2px 5px}
+.reps{margin-top:8px;padding-left:10px;border-left:2px solid rgba(255,255,255,.25);display:flex;flex-direction:column;gap:5px}
+.rep{font-size:12px;color:var(--sub);display:flex;justify-content:space-between;gap:6px}
+.rep-box{display:flex;gap:6px;margin-top:8px}
+.rep-in{flex:1;background:rgba(0,0,0,.22);border:1px solid var(--bd);border-radius:999px;padding:6px 12px;color:var(--tx);font-size:12px;outline:none;min-width:0}
+.bar{display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--bd);flex-shrink:0}
+.in{flex:1;background:rgba(255,255,255,.16);border:1px solid var(--bd);border-radius:999px;padding:9px 14px;color:var(--tx);font-size:14px;outline:none;min-width:0}
+.in::placeholder{color:var(--sub)}
+.send{background:rgba(255,255,255,.28);border:1px solid var(--bd);color:var(--tx);border-radius:999px;padding:0 15px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
+.pbox{background:var(--glass);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:10px;flex-shrink:0}
+.fld{width:100%;background:rgba(255,255,255,.12);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none}
+.lbl{font-size:11px;color:var(--sub);margin-bottom:3px;display:block}
+</style>
+</head>
+<body>
+<div class="frame">
+  <!-- TL画面 -->
+  <div id="sc-tl" class="screen active">
+    <div class="hdr">
+      <a class="btn" href="index.html">← ホーム</a>
+      <div id="my-av" style="cursor:pointer" onclick="openProf('user','user',mode)"></div>
+      <button class="btn" onclick="aiPatrol()">+ 巡回(AI)</button>
+    </div>
+    <div class="tabs">
+      <button id="t-main" class="tab active" onclick="setMode('main')">本垢 TL</button>
+      <button id="t-priv" class="tab" onclick="setMode('priv')">🔒 鍵垢 TL</button>
+    </div>
+    <div id="feed" class="feed"></div>
+    <div class="bar">
+      <input id="post-in" class="in" placeholder="本垢でいま何してる？" onkeydown="if(event.key==='Enter')addPost()" />
+      <button class="send" onclick="addPost()">投稿</button>
+    </div>
+  </div>
 
+  <!-- プロフィール画面 -->
+  <div id="sc-prof" class="screen">
+    <div class="hdr">
+      <button class="btn" onclick="showSc('sc-tl')">← TL</button>
+      <div id="p-title" class="title">プロフィール</div>
+      <button class="btn" onclick="toggleEdit()">編集</button>
+    </div>
+    <div id="p-view" class="pbox">
+      <div class="row" style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px"><div id="p-av"></div><div><div id="p-name" class="name"></div><div id="p-id" class="sub"></div></div></div>
+        <span id="p-lock" class="chip" style="display:none">🔒 鍵垢</span>
+      </div>
+      <div id="p-bio" style="font-size:13px;color:var(--sub);white-space:pre-wrap"></div>
+    </div>
+    <div id="p-edit" class="pbox" style="display:none;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="pe-av"></div>
+        <div class="flex1"><label class="lbl">表示名</label><input id="pe-name" class="fld" /></div>
+        <label class="chip">写真<input type="file" accept="image/*" style="display:none" onchange="pickImg(event)" /></label>
+      </div>
+      <div><label class="lbl">自己紹介</label><textarea id="pe-bio" class="fld" rows="2"></textarea></div>
+      <button class="send" style="padding:8px" onclick="saveProf()">保存</button>
+    </div>
+    <div class="tabs">
+      <button id="pt-posts" class="tab active" onclick="setPTab('posts')">ポスト</button>
+      <button id="pt-reps" class="tab" onclick="setPTab('reps')">リプ履歴</button>
+    </div>
+    <div id="p-feed" class="feed"></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const nowStr=()=>{const n=new Date();return`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`};
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+const appSet=JSON.parse(localStorage.getItem("my_space_settings")||"null")||{userName:"あき",userImg:"",characters:[{id:"leo",name:"玲央",img:""}]};
+let profs=JSON.parse(localStorage.getItem("my_space_x_profs")||"null")||{};
+let posts=JSON.parse(localStorage.getItem("my_space_x_posts")||"null")||[{id:1,mode:"main",ot:"char",oid:"leo",author:"玲央",text:"朝の空気ちょっとひんやりしてるね。温かい飲み物ある？",time:"08:45",likes:1,liked:false,replies:[]}];
+let mode="main",openRep=null,curP={ot:"user",oid:"user",md:"main"},pTab="posts",editing=false;
+
+function saveAll(){localStorage.setItem("my_space_x_posts",JSON.stringify(posts));localStorage.setItem("my_space_x_profs",JSON.stringify(profs));renderTL()}
+function showSc(id){document.querySelectorAll(".screen").forEach(e=>e.classList.remove("active"));$(id).classList.add("active")}
+function avHtml(img,fb,sz,fs){return`<div class="av" style="width:${sz}px;height:${sz}px;font-size:${fs}px">${img?`<img src="${img}"/>`:esc((fb||"？").slice(0,1))}</div>`}
+
+function getAcc(ot,oid,md){
+  if(ot==="user"){const k=md==="priv"?"user_priv":"user_main",p=profs[k]||{},bn=appSet.userName||"あき";return{k,ot:"user",oid:"user",md,name:p.name||(md==="priv"?`${bn}（鍵）`:bn),id:md==="priv"?"@aki_secret":"@aki_main",img:p.img||appSet.userImg||"",bio:p.bio||(md==="priv"?"🔒 鍵アカウント":"")}}
+  const c=(appSet.characters||[]).find(x=>x.id===oid)||(appSet.characters||[])[0]||{id:"leo",name:"玲央",img:""},k=`char_${c.id}_${md}`,p=profs[k]||{};
+  return{k,ot:"char",oid:c.id,md,name:p.name||(md==="priv"?`${c.name}（裏）`:c.name),id:md==="priv"?`@${c.id}_priv`:`@${c.id}_official`,img:p.img||c.img||"",bio:p.bio||""}
+}
+
+// 共通コンテキスト生成（LINE履歴も読み込んで齟齬を防ぐ土台）
+function getSharedContext(){
+  const chats=JSON.parse(localStorage.getItem("my_space_line_chats")||"{}");
+  const lineSummary=Object.values(chats).flat().slice(-8).map(m=>`${m.sender==="me"?"あき":"玲央"}:${m.text}`).join(" / ");
+  const xSummary=posts.slice(0,8).map(p=>`[${p.mode}]${p.author}:${p.text}`).join(" / ");
+  return{lineSummary,xSummary};
+}
+
+// 将来ここをGemini API呼び出しに差し替える窓口
+function aiReact(md,ctxText,cb){
+  const c=(appSet.characters||[])[0]||{id:"leo",name:"玲央"},a=getAcc("char",c.id,md);
+  const ctx=getSharedContext();
+  setTimeout(()=>cb(a,`${md==="priv"?"（AI鍵反応）":"（AI反応）"}『${ctxText}』…見てたよ。${ctx.lineSummary?"（LINE連携済）":""}`),600);
+}
+
+function setMode(m){mode=m;openRep=null;$("t-main").classList.toggle("active",m==="main");$("t-priv").classList.toggle("active",m==="priv");$("post-in").placeholder=m==="priv"?"🔒 鍵垢でつぶやく...":"本垢でいま何してる？";renderTL()}
+
+function addPost(){
+  const i=$("post-in"),t=i.value.trim();if(!t)return;
+  const a=getAcc("user","user",mode),p={id:Date.now(),mode,ot:"user",oid:"user",author:a.name,text:t,time:nowStr(),likes:0,liked:false,replies:[]};
+  posts.unshift(p);i.value="";saveAll();
+  aiReact(mode,t,(ai,rt)=>{const x=posts.find(v=>v.id===p.id);if(x){x.likes++;x.replies.push({id:Date.now()+1,ot:"char",oid:ai.oid,author:ai.name,text:rt,time:nowStr()});saveAll()}});
+}
+
+function aiPatrol(){
+  const cs=appSet.characters||[{id:"leo",name:"玲央"}],c=cs[Math.floor(Math.random()*cs.length)],a=getAcc("char",c.id,mode);
+  const pl=mode==="priv"?["（AI鍵自発）表では言わないけど、ちょっと気になってた。","（AI鍵自発）今なにしてるか気になって画面開いた。"]:["（AI自発）なんか急に甘いものか炭酸が飲みたい気分かも。","（AI自発）今日ちょっとペース早いかも？一息つこう。"];
+  posts.unshift({id:Date.now(),mode,ot:"char",oid:c.id,author:a.name,text:pl[Math.floor(Math.random()*pl.length)],time:nowStr(),likes:0,liked:false,replies:[]});saveAll();
+}
+
+function likeP(id){const p=posts.find(x=>x.id===id);if(p){p.liked=!p.liked;p.likes=Math.max(0,p.likes+(p.liked?1:-1));saveAll()}}
+function delP(id){posts=posts.filter(x=>x.id!==id);saveAll()}
+function openRepBox(id){openRep=(openRep===id?null:id);renderTL()}
+function sendRep(pid){
+  const i=$(`ri-${pid}`),t=i?.value.trim();if(!t)return;const p=posts.find(x=>x.id===pid);if(!p)return;
+  const a=getAcc("user","user",mode);p.replies.push({id:Date.now(),ot:"user",oid:"user",author:a.name,text:t,time:nowStr()});openRep=null;saveAll();
+  aiReact(mode,t,(ai,rt)=>{const x=posts.find(v=>v.id===pid);if(x){x.replies.push({id:Date.now()+1,ot:"char",oid:ai.oid,author:ai.name,text:rt,time:nowStr()});saveAll()}});
+}
+function delRep(pid,rid){const p=posts.find(x=>x.id===pid);if(p){p.replies=p.replies.filter(r=>r.id!==rid);saveAll()}}
+
+function renderTL(){
+  const ma=getAcc("user","user",mode);$("my-av").innerHTML=avHtml(ma.img,ma.name,32,13);const f=$("feed");f.innerHTML="";
+  posts.filter(p=>(p.mode||"main")===mode).forEach(p=>{
+    const a=getAcc(p.ot||"char",p.oid||"leo",p.mode||"main"),d=document.createElement("div");d.className="card";
+    const reps=(p.replies||[]).length?`<div class="reps">${p.replies.map(r=>`<div class="rep"><span><b>${esc(r.author)}</b>：${esc(r.text)}</span><button class="xdel" onclick="delRep(${p.id},${r.id})">×</button></div>`).join("")}</div>`:"";
+    const rb=openRep===p.id?`<div class="rep-box"><input id="ri-${p.id}" class="rep-in" placeholder="自分としてリプ..." onkeydown="if(event.key==='Enter')sendRep(${p.id})"/><button class="chip" onclick="sendRep(${p.id})">送信</button></div>`:"";
+    d.innerHTML=`<div style="cursor:pointer" onclick="openProf('${a.ot}','${a.oid}','${a.md}')">${avHtml(a.img,a.name,38,14)}</div><div class="flex1"><div class="row"><span class="name" style="cursor:pointer" onclick="openProf('${a.ot}','${a.oid}','${a.md}')">${esc(a.name)}</span><div><span class="time">${esc(p.time)}</span><button class="xdel" onclick="delP(${p.id})">×</button></div></div><div class="txt">${esc(p.text)}</div><div style="display:flex;gap:8px"><button class="chip ${p.liked?'liked':''}" onclick="likeP(${p.id})">${p.liked?'♥':'♡'} ${p.likes}</button><button class="chip" onclick="openRepBox(${p.id})">💬 ${(p.replies||[]).length}</button></div>${rb}${reps}</div>`;
+    f.appendChild(d);
+  });
+}
+
+function openProf(ot,oid,md){curP={ot,oid,md};pTab="posts";editing=false;$("p-edit").style.display="none";showSc("sc-prof");renderProf()}
+function renderProf(){
+  const a=getAcc(curP.ot,curP.oid,curP.md);$("p-title").textContent=a.name;$("p-av").innerHTML=avHtml(a.img,a.name,48,17);$("p-name").textContent=a.name;$("p-id").textContent=a.id;$("p-bio").textContent=a.bio||"（未設定）";$("p-lock").style.display=a.md==="priv"?"inline-flex":"none";
+  $("pt-posts").classList.toggle("active",pTab==="posts");$("pt-reps").classList.toggle("active",pTab==="reps");
+  const f=$("p-feed");f.innerHTML="";
+  if(pTab==="posts"){
+    const l=posts.filter(p=>(p.ot||"char")===a.ot&&(p.oid||"leo")===a.oid&&(p.mode||"main")===a.md);
+    if(!l.length)f.innerHTML=`<div class="sub" style="text-align:center;padding:20px">まだポストがありません</div>`;
+    l.forEach(p=>{const d=document.createElement("div");d.className="card";d.innerHTML=`${avHtml(a.img,a.name,34,13)}<div class="flex1"><div class="row"><span class="name">${esc(a.name)}</span><span class="time">${esc(p.time)}</span></div><div class="txt">${esc(p.text)}</div></div>`;f.appendChild(d)});
+  }else{
+    const rs=[];posts.forEach(p=>{if((p.mode||"main")!==a.md)return;(p.replies||[]).forEach(r=>{if((r.ot||"char")===a.ot&&(r.oid||"leo")===a.oid)rs.push({r,pa:p.author,pt:p.text})})});
+    if(!rs.length)f.innerHTML=`<div class="sub" style="text-align:center;padding:20px">まだリプ履歴がありません</div>`;
+    rs.forEach(x=>{const d=document.createElement("div");d.className="card";d.innerHTML=`${avHtml(a.img,a.name,34,13)}<div class="flex1"><div class="row"><span class="name">${esc(a.name)}</span><span class="time">${esc(x.r.time)}</span></div><div class="sub">返信先 @${esc(x.pa)}：${esc(x.pt.slice(0,20))}...</div><div class="txt">${esc(x.r.text)}</div></div>`;f.appendChild(d)});
+  }
+}
+function setPTab(t){pTab=t;renderProf()}
+function toggleEdit(){editing=!editing;const c=$("p-edit");if(!editing){c.style.display="none";return}const a=getAcc(curP.ot,curP.oid,curP.md);$("pe-av").innerHTML=avHtml(a.img,a.name,42,14);$("pe-name").value=a.name;$("pe-bio").value=a.bio;c.style.display="flex"}
+function pickImg(ev){const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=e=>{const i=new Image();i.onload=()=>{const c=document.createElement("canvas");c.width=120;c.height=120;const x=c.getContext("2d"),m=Math.min(i.width,i.height);x.drawImage(i,(i.width-m)/2,(i.height-m)/2,m,m,0,0,120,120);const a=getAcc(curP.ot,curP.oid,curP.md);if(!profs[a.k])profs[a.k]={};profs[a.k].img=c.toDataURL("image/jpeg",.8);$("pe-av").innerHTML=avHtml(profs[a.k].img,a.name,42,14)};i.src=e.target.result};r.readAsDataURL(f)}
+function saveProf(){const a=getAcc(curP.ot,curP.oid,curP.md);if(!profs[a.k])profs[a.k]={};profs[a.k].name=$("pe-name").value.trim()||a.name;profs[a.k].bio=$("pe-bio").value;editing=false;$("p-edit").style.display="none";saveAll();renderProf()}
+
+renderTL();
+</script>
+</body>
+</html>
