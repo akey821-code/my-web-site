@@ -159,7 +159,58 @@ function updateClock(){
 updateClock();setInterval(updateClock,1000);
 function nowStr(){const n=new Date();return `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+const WORKER_URL = "https://my-space-api.akirinko821.workers.dev";
+const nowTs = () => Date.now();
 
+async function syncStateToCloud(patch = {}) {
+try {
+await fetch(`${WORKER_URL}/api/sync`, {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify(patch),
+});
+} catch (e) {
+console.warn("syncStateToCloud error:", e);
+}
+}
+
+async function pullStateFromCloud() {
+try {
+const res = await fetch(`${WORKER_URL}/api/sync`);
+const data = await res.json();
+if (!data?.ok) return;
+let updated = false;
+if (data.settings && Object.keys(data.settings).length) {
+appSettings = { ...appSettings, ...data.settings };
+localStorage.setItem("my_space_settings", JSON.stringify(appSettings));
+updated = true;
+}
+if (data.lineChats && typeof data.lineChats === "object") {
+chatData = data.lineChats;
+localStorage.setItem("my_space_line_chats", JSON.stringify(chatData));
+updated = true;
+}
+if (Array.isArray(data.xPosts)) {
+xPosts = data.xPosts;
+localStorage.setItem("my_space_x_posts", JSON.stringify(xPosts));
+updated = true;
+}
+if (updated) {
+renderTalkList();
+renderXFeed();
+renderLogEpisodes();
+updateSpeakerOpts();
+if (document.getElementById("screen-line-chat")?.classList.contains("active")) {
+renderMsgs();
+}
+if (xPosts.length) {
+document.getElementById("lock-x-preview").textContent = `${xPosts[0].author}：${xPosts[0].text}`;
+}
+}
+} catch (e) {
+console.warn("pullStateFromCloud error:", e);
+}
+}
 const defSet={
   userName:"自分",userIcon:"自",userImg:"",userProfile:"",worldRule:"",
   characters:[
@@ -239,43 +290,45 @@ function syncSettings(){
 function addCharacterSlot(){syncSettings();appSettings.characters.push({id:"c_"+Date.now(),name:"新キャラ",icon:"新",img:"",initialMessage:"よろしく。",prompt:""});renderSettings()}
 function removeChar(i){syncSettings();if(appSettings.characters.length>1){appSettings.characters.splice(i,1);renderSettings()}}
 function saveAllSettings(){
-  syncSettings();localStorage.setItem("my_space_settings",JSON.stringify(appSettings));
-  renderTalkList();updateSpeakerOpts();
-  const t=document.getElementById("settings-toast");t.textContent="設定を保存しました！";setTimeout(()=>t.textContent="",2000);
+ syncSettings();
+ localStorage.setItem("my_space_settings",JSON.stringify(appSettings));
+ syncStateToCloud({ settings: appSettings });
+ renderTalkList();updateSpeakerOpts();
+ const t=document.getElementById("settings-toast");t.textContent="保存＆クラウド同期しました！";setTimeout(()=>t.textContent="",2000);
 }
 
-let curPartner=appSettings.characters[0]?.id||"leo";
-let chatData=JSON.parse(localStorage.getItem("my_space_line_chats")||"null")||{};
-function initChats(){appSettings.characters.forEach(c=>{if(!chatData[c.id])chatData[c.id]=[{sender:"partner",text:c.initialMessage||"こんにちは。",time:nowStr()}]})}
-initChats();
-function saveChats(){localStorage.setItem("my_space_line_chats",JSON.stringify(chatData));renderTalkList()}
-function openFirstChat(){if(appSettings.characters[0])openChat(appSettings.characters[0].id)}
-function renderTalkList(){
-  initChats();const box=document.getElementById("talk-list-container");box.innerHTML="";
-  appSettings.characters.forEach(c=>{
-    const m=chatData[c.id]||[],last=m[m.length-1];
-    const b=document.createElement("button");b.className="talk-item";b.onclick=()=>openChat(c.id);
-    b.innerHTML=`${avatarHtml(c.img,c.name,44,16)}<div class="talk-info"><div class="talk-top"><span class="talk-name">${esc(c.name)}</span><span class="talk-time">${last?last.time:""}</span></div><div class="talk-preview">${last?esc(last.text):""}</div></div>`;
-    box.appendChild(b);
-  });
-  const f=appSettings.characters[0];
-  if(f&&chatData[f.id]?.length){document.getElementById("lock-line-sender").textContent=f.name;document.getElementById("lock-line-preview").textContent=chatData[f.id].slice(-1)[0].text}
-}
-function openChat(id){const m=charMap();if(!m[id])return;curPartner=id;document.getElementById("chat-partner-name").textContent=m[id].name;openScreen("screen-line-chat");renderMsgs()}
-function renderMsgs(){
-  const box=document.getElementById("chat-messages");box.innerHTML="";
-  (chatData[curPartner]||[]).forEach(m=>{
-    const r=document.createElement("div");r.className=`msg-row ${m.sender}`;
-    r.innerHTML=`<div class="msg-bubble">${esc(m.text)}</div><div class="msg-meta">${m.time}</div>`;box.appendChild(r);
-  });
-  box.scrollTop=box.scrollHeight;
-}
 function sendMessage(){
-  const inp=document.getElementById("chat-input"),txt=inp.value.trim();if(!txt)return;
-  if(!chatData[curPartner])chatData[curPartner]=[];
-  chatData[curPartner].push({sender:"me",text:txt,time:nowStr()});inp.value="";saveChats();renderMsgs();
-  const tid=curPartner,cname=charMap()[tid]?.name||"相手";
-  setTimeout(()=>{chatData[tid].push({sender:"partner",text:`（${cname}・仮返信）『${txt}』受け取ったよ！`,time:nowStr()});saveChats();if(curPartner===tid)renderMsgs()},700);
+ const inp=document.getElementById("chat-input"),txt=inp.value.trim();if(!txt)return;
+ if(!chatData[curPartner])chatData[curPartner]=[];
+ const tid=curPartner;
+ chatData[tid].push({id:nowTs(),ts:nowTs(),sender:"me",text:txt,time:nowStr()});
+ inp.value="";saveChats();renderMsgs();
+ syncStateToCloud({ lineChats: chatData });
+
+ const waitingId = nowTs() + 1;
+ chatData[tid].push({id:waitingId,ts:nowTs(),sender:"partner",text:"…",time:nowStr()});
+ if(curPartner===tid)renderMsgs();
+
+ fetch(`${WORKER_URL}/api/generate`, {
+ method: "POST",
+ headers: { "Content-Type": "application/json" },
+ body: JSON.stringify({ kind: "line_reply", mode: "private", targetText: txt }),
+ })
+ .then(r => r.json())
+ .then(d => {
+ const idx = (chatData[tid] || []).findIndex(m => m.id === waitingId);
+ const replyText = d?.ok && d?.result?.text ? d.result.text : `（エラー）${d?.error || "返信に失敗しました"}`;
+ if (idx !== -1) chatData[tid][idx].text = replyText;
+ saveChats();
+ if (curPartner === tid) renderMsgs();
+ syncStateToCloud({ lineChats: chatData });
+ })
+ .catch(() => {
+ const idx = (chatData[tid] || []).findIndex(m => m.id === waitingId);
+ if (idx !== -1) chatData[tid][idx].text = "通信エラーになったよ。";
+ saveChats();
+ if (curPartner === tid) renderMsgs();
+ });
 }
 function clearCurrentChat(){const c=charMap()[curPartner];chatData[curPartner]=[{sender:"partner",text:c?.initialMessage||"こんにちは。",time:nowStr()}];saveChats();renderMsgs()}
 
@@ -353,3 +406,5 @@ if(xPosts.length)document.getElementById("lock-x-preview").textContent=`${xPosts
 </script>
 </body>
 </html>
+
+pullStateFromCloud();
