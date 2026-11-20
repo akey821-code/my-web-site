@@ -157,60 +157,63 @@ function updateClock(){
   document.getElementById("time-display").textContent=`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
 }
 updateClock();setInterval(updateClock,1000);
-function nowStr(){const n=new Date();return `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`}
+function nowStr(){const n=new Date();return`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+
 const WORKER_URL = "https://my-space-api.akirinko821.workers.dev";
 const nowTs = () => Date.now();
 
 async function syncStateToCloud(patch = {}) {
-try {
-await fetch(`${WORKER_URL}/api/sync`, {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify(patch),
-});
-} catch (e) {
-console.warn("syncStateToCloud error:", e);
-}
+  try {
+    await fetch(`${WORKER_URL}/api/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+  } catch (e) {
+    console.warn("syncStateToCloud error:", e);
+  }
 }
 
 async function pullStateFromCloud() {
-try {
-const res = await fetch(`${WORKER_URL}/api/sync`);
-const data = await res.json();
-if (!data?.ok) return;
-let updated = false;
-if (data.settings && Object.keys(data.settings).length) {
-appSettings = { ...appSettings, ...data.settings };
-localStorage.setItem("my_space_settings", JSON.stringify(appSettings));
-updated = true;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/sync`);
+    const data = await res.json();
+    if (!data?.ok) return;
+    let updated = false;
+    if (data.settings && Object.keys(data.settings).length) {
+      appSettings = { ...appSettings, ...data.settings };
+      localStorage.setItem("my_space_settings", JSON.stringify(appSettings));
+      updated = true;
+    }
+    if (data.lineChats && typeof data.lineChats === "object") {
+      chatData = data.lineChats;
+      localStorage.setItem("my_space_line_chats", JSON.stringify(chatData));
+      updated = true;
+    }
+    if (Array.isArray(data.xPosts)) {
+      xPosts = data.xPosts;
+      localStorage.setItem("my_space_x_posts", JSON.stringify(xPosts));
+      updated = true;
+    }
+    if (updated) {
+      renderTalkList();
+      renderXFeed();
+      renderLogEpisodes();
+      updateSpeakerOpts();
+      updateLockLinePreview();
+      if (document.getElementById("screen-line-chat")?.classList.contains("active")) {
+        renderMsgs();
+      }
+      if (xPosts.length) {
+        document.getElementById("lock-x-preview").textContent = `${xPosts[0].author}：${xPosts[0].text}`;
+      }
+    }
+  } catch (e) {
+    console.warn("pullStateFromCloud error:", e);
+  }
 }
-if (data.lineChats && typeof data.lineChats === "object") {
-chatData = data.lineChats;
-localStorage.setItem("my_space_line_chats", JSON.stringify(chatData));
-updated = true;
-}
-if (Array.isArray(data.xPosts)) {
-xPosts = data.xPosts;
-localStorage.setItem("my_space_x_posts", JSON.stringify(xPosts));
-updated = true;
-}
-if (updated) {
-renderTalkList();
-renderXFeed();
-renderLogEpisodes();
-updateSpeakerOpts();
-if (document.getElementById("screen-line-chat")?.classList.contains("active")) {
-renderMsgs();
-}
-if (xPosts.length) {
-document.getElementById("lock-x-preview").textContent = `${xPosts[0].author}：${xPosts[0].text}`;
-}
-}
-} catch (e) {
-console.warn("pullStateFromCloud error:", e);
-}
-}
+
 const defSet={
   userName:"自分",userIcon:"自",userImg:"",userProfile:"",worldRule:"",
   characters:[
@@ -219,14 +222,14 @@ const defSet={
   ]
 };
 let appSettings=JSON.parse(localStorage.getItem("my_space_settings")||"null")||defSet;
-function charMap(){const m={};appSettings.characters.forEach(c=>m[c.id]=c);return m}
+function charMap(){const m={};(appSettings.characters||[]).forEach(c=>m[c.id]=c);return m}
 function avatarHtml(img,fallback,size=42,font=15){
   const inner=img?`<img src="${img}" />`:esc((fallback||"？").slice(0,1));
   return `<div class="avatar-circle" style="width:${size}px;height:${size}px;font-size:${font}px">${inner}</div>`;
 }
 function findAvatarByName(name){
   if(name===(appSettings.userName||"自分"))return avatarHtml(appSettings.userImg,name,26,12);
-  const c=appSettings.characters.find(x=>x.name===name);
+  const c=(appSettings.characters||[]).find(x=>x.name===name);
   return avatarHtml(c?.img||"",name,26,12);
 }
 
@@ -266,7 +269,7 @@ function renderSettings(){
   uPrev.innerHTML=appSettings.userImg?`<img src="${appSettings.userImg}"/>`:esc((appSettings.userName||"自").slice(0,1));
 
   const list=document.getElementById("settings-char-list");list.innerHTML="";
-  appSettings.characters.forEach((c,i)=>{
+  (appSettings.characters||[]).forEach((c,i)=>{
     const div=document.createElement("div");div.className="char-card";
     div.innerHTML=`
       <div class="char-card-top"><span style="font-size:12px;font-weight:700">キャラ ${i+1}</span>${appSettings.characters.length>1?`<button class="mini-btn danger" onclick="removeChar(${i})">削除</button>`:""}</div>
@@ -290,47 +293,109 @@ function syncSettings(){
 function addCharacterSlot(){syncSettings();appSettings.characters.push({id:"c_"+Date.now(),name:"新キャラ",icon:"新",img:"",initialMessage:"よろしく。",prompt:""});renderSettings()}
 function removeChar(i){syncSettings();if(appSettings.characters.length>1){appSettings.characters.splice(i,1);renderSettings()}}
 function saveAllSettings(){
- syncSettings();
- localStorage.setItem("my_space_settings",JSON.stringify(appSettings));
- syncStateToCloud({ settings: appSettings });
- renderTalkList();updateSpeakerOpts();
- const t=document.getElementById("settings-toast");t.textContent="保存＆クラウド同期しました！";setTimeout(()=>t.textContent="",2000);
+  syncSettings();
+  localStorage.setItem("my_space_settings",JSON.stringify(appSettings));
+  syncStateToCloud({ settings: appSettings });
+  renderTalkList();updateSpeakerOpts();
+  const t=document.getElementById("settings-toast");t.textContent="保存＆クラウド同期しました！";setTimeout(()=>t.textContent="",2000);
 }
 
+let chatData=JSON.parse(localStorage.getItem("my_space_line_chats")||"null")||{};
+(appSettings.characters||[]).forEach(c=>{
+  if(!Array.isArray(chatData[c.id])||!chatData[c.id].length){
+    chatData[c.id]=[{id:1,ts:1,sender:"partner",text:c.initialMessage||"こんにちは。",time:"08:30"}];
+  }
+});
+let curPartner=(appSettings.characters?.[0]?.id)||"leo";
+
+function saveChats(){
+  localStorage.setItem("my_space_line_chats",JSON.stringify(chatData));
+  updateLockLinePreview();
+}
+function updateLockLinePreview(){
+  const pid=curPartner||(appSettings.characters?.[0]?.id)||"leo";
+  const c=charMap()[pid]||(appSettings.characters?.[0])||{name:"れお"};
+  const arr=chatData[pid]||[];
+  const last=arr[arr.length-1];
+  document.getElementById("lock-line-sender").textContent=c.name||"れお";
+  if(last)document.getElementById("lock-line-preview").textContent=last.text||"";
+}
+function openFirstChat(){
+  const firstId=(appSettings.characters?.[0]?.id)||curPartner;
+  openChat(firstId);
+}
+function openChat(id){
+  curPartner=id;
+  const c=charMap()[id]||(appSettings.characters?.[0])||{name:"れお"};
+  if(!Array.isArray(chatData[id])||!chatData[id].length){
+    chatData[id]=[{id:nowTs(),ts:nowTs(),sender:"partner",text:c.initialMessage||"こんにちは。",time:nowStr()}];
+    saveChats();
+  }
+  document.getElementById("chat-partner-name").textContent=c.name||"れお";
+  openScreen("screen-line-chat");
+  renderMsgs();
+}
+function renderTalkList(){
+  const wrap=document.getElementById("talk-list-container");
+  if(!wrap)return;
+  wrap.innerHTML="";
+  (appSettings.characters||[]).forEach(c=>{
+    const arr=chatData[c.id]||[];
+    const last=arr[arr.length-1]||{text:c.initialMessage||"",time:""};
+    const btn=document.createElement("button");
+    btn.className="talk-item";
+    btn.onclick=()=>openChat(c.id);
+    btn.innerHTML=`${avatarHtml(c.img,c.name,46,16)}<div class="talk-info"><div class="talk-top"><span class="talk-name">${esc(c.name)}</span><span class="talk-time">${esc(last.time||"")}</span></div><div class="talk-preview">${esc(last.text||"")}</div></div>`;
+    wrap.appendChild(btn);
+  });
+}
+function renderMsgs(){
+  const box=document.getElementById("chat-messages");
+  if(!box)return;
+  box.innerHTML="";
+  const arr=chatData[curPartner]||[];
+  arr.forEach(m=>{
+    const row=document.createElement("div");
+    row.className=`msg-row ${m.sender==="me"?"me":"partner"}`;
+    row.innerHTML=`<div class="msg-bubble">${esc(m.text)}</div><div class="msg-meta">${esc(m.time||"")}</div>`;
+    box.appendChild(row);
+  });
+  box.scrollTop=box.scrollHeight;
+}
 function sendMessage(){
- const inp=document.getElementById("chat-input"),txt=inp.value.trim();if(!txt)return;
- if(!chatData[curPartner])chatData[curPartner]=[];
- const tid=curPartner;
- chatData[tid].push({id:nowTs(),ts:nowTs(),sender:"me",text:txt,time:nowStr()});
- inp.value="";saveChats();renderMsgs();
- syncStateToCloud({ lineChats: chatData });
+  const inp=document.getElementById("chat-input"),txt=inp.value.trim();if(!txt)return;
+  if(!chatData[curPartner])chatData[curPartner]=[];
+  const tid=curPartner;
+  chatData[tid].push({id:nowTs(),ts:nowTs(),sender:"me",text:txt,time:nowStr()});
+  inp.value="";saveChats();renderMsgs();
+  syncStateToCloud({ lineChats: chatData });
 
- const waitingId = nowTs() + 1;
- chatData[tid].push({id:waitingId,ts:nowTs(),sender:"partner",text:"…",time:nowStr()});
- if(curPartner===tid)renderMsgs();
+  const waitingId = nowTs() + 1;
+  chatData[tid].push({id:waitingId,ts:nowTs(),sender:"partner",text:"…",time:nowStr()});
+  if(curPartner===tid)renderMsgs();
 
- fetch(`${WORKER_URL}/api/generate`, {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({ kind: "line_reply", mode: "private", targetText: txt }),
- })
- .then(r => r.json())
- .then(d => {
- const idx = (chatData[tid] || []).findIndex(m => m.id === waitingId);
- const replyText = d?.ok && d?.result?.text ? d.result.text : `（エラー）${d?.error || "返信に失敗しました"}`;
- if (idx !== -1) chatData[tid][idx].text = replyText;
- saveChats();
- if (curPartner === tid) renderMsgs();
- syncStateToCloud({ lineChats: chatData });
- })
- .catch(() => {
- const idx = (chatData[tid] || []).findIndex(m => m.id === waitingId);
- if (idx !== -1) chatData[tid][idx].text = "通信エラーになったよ。";
- saveChats();
- if (curPartner === tid) renderMsgs();
- });
+  fetch(`${WORKER_URL}/api/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind: "line_reply", mode: "private", targetText: txt }),
+  })
+    .then(r => r.json())
+    .then(d => {
+      const idx = (chatData[tid] || []).findIndex(m => m.id === waitingId);
+      const replyText = d?.ok && d?.result?.text ? d.result.text : `（エラー）${d?.error || "返信に失敗しました"}`;
+      if (idx !== -1) chatData[tid][idx].text = replyText;
+      saveChats();
+      if (curPartner === tid) renderMsgs();
+      syncStateToCloud({ lineChats: chatData });
+    })
+    .catch(() => {
+      const idx = (chatData[tid] || []).findIndex(m => m.id === waitingId);
+      if (idx !== -1) chatData[tid][idx].text = "通信エラーになったよ。";
+      saveChats();
+      if (curPartner === tid) renderMsgs();
+    });
 }
-function clearCurrentChat(){const c=charMap()[curPartner];chatData[curPartner]=[{sender:"partner",text:c?.initialMessage||"こんにちは。",time:nowStr()}];saveChats();renderMsgs()}
+function clearCurrentChat(){const c=charMap()[curPartner];chatData[curPartner]=[{id:nowTs(),ts:nowTs(),sender:"partner",text:c?.initialMessage||"こんにちは。",time:nowStr()}];saveChats();renderMsgs();syncStateToCloud({ lineChats: chatData })}
 
 let xPosts=JSON.parse(localStorage.getItem("my_space_x_posts")||"null")||[{id:1,author:"れお",icon:"れ",text:"朝の空気ちょっとひんやりしてるね。温かい飲み物ある？",time:"08:45",likes:1,replies:["（仮リプ）れお：いいね、ちょっとほっと一息つこ。"]}];
 function saveX(){localStorage.setItem("my_space_x_posts",JSON.stringify(xPosts));renderXFeed();if(xPosts.length)document.getElementById("lock-x-preview").textContent=`${xPosts[0].author}：${xPosts[0].text}`}
@@ -364,7 +429,7 @@ let curEpId="ep1";
 function saveLogs(){localStorage.setItem("my_space_set_logs",JSON.stringify(logEps))}
 function updateSpeakerOpts(){
   const sel=document.getElementById("scene-speaker-select");if(!sel)return;sel.innerHTML="";
-  appSettings.characters.forEach(c=>{const o=document.createElement("option");o.value=c.name;o.textContent=c.name;sel.appendChild(o)});
+  (appSettings.characters||[]).forEach(c=>{const o=document.createElement("option");o.value=c.name;o.textContent=c.name;sel.appendChild(o)});
   const u=document.createElement("option");u.value=appSettings.userName||"自分";u.textContent=appSettings.userName||"自分";sel.appendChild(u);
 }
 function renderLogEpisodes(){
@@ -401,10 +466,9 @@ function addSceneCard(){
   if(!ep||!txt)return;ep.scenes.push({speaker:sp,time:nowStr(),text:txt});inp.value="";saveLogs();renderScenes();
 }
 
-renderTalkList();renderXFeed();renderLogEpisodes();updateSpeakerOpts();
+renderTalkList();renderXFeed();renderLogEpisodes();updateSpeakerOpts();updateLockLinePreview();
 if(xPosts.length)document.getElementById("lock-x-preview").textContent=`${xPosts[0].author}：${xPosts[0].text}`;
 pullStateFromCloud();
 </script>
 </body>
 </html>
-
