@@ -1,1093 +1,322 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>My Space</title>
-  <style>
-    :root {
-      --bg-gradient: linear-gradient(160deg, #1b2234 0%, #2d3752 45%, #4a4063 100%);
-      --glass-bg: rgba(255, 255, 255, 0.14);
-      --glass-border: rgba(255, 255, 255, 0.22);
-      --text-main: #ffffff;
-      --text-sub: rgba(255, 255, 255, 0.78);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
-      background: var(--bg-gradient);
-      color: var(--text-main);
-      min-height: 100dvh;
-      display: flex;
-      justify-content: center;
-      overflow-x: hidden;
-    }
-
-    .phone-frame {
-      width: 100%;
-      max-width: 430px;
-      height: 100dvh;
-      padding: 44px 20px 24px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* 画面切り替え制御 */
-    .screen {
-      display: none;
-      flex: 1;
-      flex-direction: column;
-      min-height: 0;
-    }
-    .screen.active {
-      display: flex;
-    }
-
-    /* ロック画面：時計・日付 */
-    .clock-area {
-      text-align: center;
-      margin-top: 12px;
-      margin-bottom: 24px;
-    }
-    .date-text {
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--text-sub);
-      letter-spacing: 0.04em;
-      margin-bottom: 4px;
-    }
-    .time-text {
-      font-size: 72px;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: -0.02em;
-    }
-
-    /* ロック画面：通知カード */
-    .widget-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid var(--glass-border);
-      border-radius: 18px;
-      padding: 14px 16px;
-      margin-bottom: 12px;
-      cursor: pointer;
-    }
-    .widget-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-sub);
-      margin-bottom: 4px;
-    }
-    .widget-body {
-      font-size: 14px;
-      line-height: 1.45;
-    }
-
-    /* ロック画面：アプリアイコングリッド */
-    .app-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px 12px;
-      margin-top: auto;
-      padding-top: 24px;
-    }
-    .app-btn {
-      background: none;
-      border: none;
-      color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-    }
-    .app-icon {
-      width: 58px;
-      height: 58px;
-      border-radius: 16px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 26px;
-      transition: transform 0.12s ease;
-    }
-    .app-btn:active .app-icon {
-      transform: scale(0.92);
-    }
-    .app-label {
-      font-size: 11px;
-      color: var(--text-sub);
-    }
-
-    /* サブ画面共通ヘッダー */
-    .sub-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--glass-border);
-      margin-bottom: 12px;
-      flex-shrink: 0;
-    }
-    .back-btn {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      color: var(--text-main);
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    .sub-title {
-      font-size: 16px;
-      font-weight: 700;
-    }
-    .placeholder-box {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 16px;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    /* LINE：トーク一覧 */
-    .talk-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      overflow-y: auto;
-    }
-    .talk-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 12px 14px;
-      cursor: pointer;
-      text-align: left;
-      color: var(--text-main);
-      width: 100%;
-    }
-    .talk-avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-    .talk-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .talk-top {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .talk-name {
-      font-size: 15px;
-      font-weight: 700;
-    }
-    .talk-time {
-      font-size: 11px;
-      color: var(--text-sub);
-    }
-    .talk-preview {
-      font-size: 13px;
-      color: var(--text-sub);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* LINE：個別トーク */
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 4px 2px 12px;
-    }
-    .msg-row {
-      display: flex;
-      flex-direction: column;
-      max-width: 78%;
-    }
-    .msg-row.partner {
-      align-self: flex-start;
-    }
-    .msg-row.me {
-      align-self: flex-end;
-      align-items: flex-end;
-    }
-    .msg-bubble {
-      padding: 10px 14px;
-      border-radius: 18px;
-      font-size: 14px;
-      line-height: 1.45;
-      word-break: break-word;
-      white-space: pre-wrap;
-    }
-    .msg-row.partner .msg-bubble {
-      background: rgba(255, 255, 255, 0.18);
-      border: 1px solid var(--glass-border);
-      border-top-left-radius: 4px;
-    }
-    .msg-row.me .msg-bubble {
-      background: rgba(120, 210, 160, 0.35);
-      border: 1px solid rgba(150, 240, 190, 0.45);
-      border-top-right-radius: 4px;
-    }
-    .msg-meta {
-      font-size: 10px;
-      color: var(--text-sub);
-      margin-top: 3px;
-      padding: 0 4px;
-    }
-
-    /* 下部入力欄（共通） */
-    .chat-input-bar {
-      display: flex;
-      gap: 8px;
-      padding-top: 10px;
-      border-top: 1px solid var(--glass-border);
-      flex-shrink: 0;
-    }
-    .chat-input {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.16);
-      border: 1px solid var(--glass-border);
-      border-radius: 999px;
-      padding: 10px 16px;
-      color: var(--text-main);
-      font-size: 15px;
-      outline: none;
-      min-width: 0;
-    }
-    .chat-input::placeholder {
-      color: var(--text-sub);
-    }
-    .send-btn {
-      background: rgba(255, 255, 255, 0.28);
-      border: 1px solid var(--glass-border);
-      color: var(--text-main);
-      border-radius: 999px;
-      padding: 0 16px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .send-btn:active {
-      transform: scale(0.95);
-    }
-
-    /* X：タイムライン */
-    .x-feed {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding-bottom: 12px;
-    }
-    .x-card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 12px 14px;
-      display: flex;
-      gap: 10px;
-    }
-    .x-avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.24);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-    .x-body-wrap {
-      flex: 1;
-      min-width: 0;
-    }
-    .x-author-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 4px;
-    }
-    .x-author {
-      font-size: 14px;
-      font-weight: 700;
-    }
-    .x-time {
-      font-size: 11px;
-      color: var(--text-sub);
-    }
-    .x-text {
-      font-size: 14px;
-      line-height: 1.45;
-      white-space: pre-wrap;
-      word-break: break-word;
-      margin-bottom: 8px;
-    }
-    .x-actions {
-      display: flex;
-      gap: 12px;
-    }
-    .x-action-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      color: var(--text-sub);
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .x-replies {
-      margin-top: 8px;
-      padding-left: 10px;
-      border-left: 2px solid rgba(255, 255, 255, 0.25);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .x-reply-item {
-      font-size: 12px;
-      color: var(--text-sub);
-      line-height: 1.4;
-    }
-
-    /* set log：エピソード一覧 */
-    .log-ep-list {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .log-ep-card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 14px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      text-align: left;
-      color: var(--text-main);
-      width: 100%;
-    }
-    .log-ep-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .log-ep-meta {
-      font-size: 12px;
-      color: var(--text-sub);
-    }
-    .log-badge {
-      background: rgba(255, 255, 255, 0.18);
-      border: 1px solid var(--glass-border);
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 11px;
-      flex-shrink: 0;
-    }
-
-    /* set log：シーンカード詳細（Muse風フォトログ枠） */
-    .log-detail-meta {
-      margin-bottom: 12px;
-      flex-shrink: 0;
-    }
-    .log-detail-title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-    .log-detail-title {
-      font-size: 17px;
-      font-weight: 700;
-    }
-    .log-detail-sub {
-      font-size: 12px;
-      color: var(--text-sub);
-      margin-top: 2px;
-    }
-    .scene-list {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding-bottom: 12px;
-    }
-    .scene-card {
-      position: relative;
-      height: 190px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid var(--glass-border);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 14px;
-      flex-shrink: 0;
-    }
-    .scene-card.has-bg {
-      background-size: cover;
-      background-position: center;
-    }
-    .scene-card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.55) 100%);
-      pointer-events: none;
-    }
-    .scene-top, .scene-center {
-      position: relative;
-      z-index: 1;
-    }
-    .scene-top {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .scene-speaker-icon {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.28);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .scene-speaker-name {
-      font-size: 13px;
-      font-weight: 700;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
-    }
-    .scene-center {
-      text-align: center;
-      margin: auto 0;
-      padding: 0 8px;
-    }
-    .scene-time {
-      font-size: 34px;
-      font-weight: 700;
-      line-height: 1.1;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
-      margin-bottom: 6px;
-    }
-    .scene-line {
-      font-size: 14px;
-      font-weight: 600;
-      text-shadow: 0 1px 6px rgba(0,0,0,0.75);
-      line-height: 1.4;
-    }
-    .speaker-select {
-      background: rgba(255, 255, 255, 0.16);
-      border: 1px solid var(--glass-border);
-      border-radius: 999px;
-      padding: 0 10px;
-      color: var(--text-main);
-      font-size: 13px;
-      outline: none;
-      flex-shrink: 0;
-    }
-    .speaker-select option {
-      background: #2d3752;
-      color: #fff;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>My Space</title>
+<style>
+:root{--bg:linear-gradient(160deg,#1b2234 0%,#2d3752 45%,#4a4063 100%);--glass:rgba(255,255,255,0.14);--border:rgba(255,255,255,0.22);--text:#fff;--sub:rgba(255,255,255,0.78)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;display:flex;justify-content:center;overflow-x:hidden}
+.phone-frame{width:100%;max-width:430px;height:100dvh;padding:44px 20px 24px;display:flex;flex-direction:column;overflow:hidden}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}.screen.active{display:flex}
+.clock-area{text-align:center;margin:12px 0 24px}.date-text{font-size:16px;color:var(--sub);margin-bottom:4px}.time-text{font-size:72px;font-weight:700;line-height:1}
+.widget-card{background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:18px;padding:14px 16px;margin-bottom:12px;cursor:pointer}
+.widget-header{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:4px}.widget-body{font-size:14px;line-height:1.45}
+.app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 12px;margin-top:auto;padding-top:24px}
+.app-btn{background:none;border:none;color:var(--text);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.app-icon{width:58px;height:58px;border-radius:16px;background:var(--glass);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px}
+.app-label{font-size:11px;color:var(--sub)}
+.sub-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-shrink:0}
+.back-btn{background:var(--glass);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:999px;font-size:13px;cursor:pointer}
+.sub-title{font-size:16px;font-weight:700}
+.talk-list,.x-feed,.log-ep-list,.scene-list,.settings-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
+.talk-item,.log-ep-card{display:flex;align-items:center;gap:12px;background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:12px 14px;cursor:pointer;text-align:left;color:var(--text);width:100%}
+.log-ep-card{justify-content:space-between}
+.talk-avatar,.x-avatar{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.talk-info,.x-body-wrap{flex:1;min-width:0}
+.talk-top,.x-author-row{display:flex;justify-content:space-between;margin-bottom:4px}
+.talk-name,.x-author,.log-ep-title{font-size:15px;font-weight:700}
+.talk-time,.x-time,.log-ep-meta{font-size:11px;color:var(--sub)}
+.talk-preview{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px 12px}
+.msg-row{display:flex;flex-direction:column;max-width:78%}.msg-row.partner{align-self:flex-start}.msg-row.me{align-self:flex-end;align-items:flex-end}
+.msg-bubble{padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.45;word-break:break-word;white-space:pre-wrap}
+.msg-row.partner .msg-bubble{background:rgba(255,255,255,0.18);border:1px solid var(--border);border-top-left-radius:4px}
+.msg-row.me .msg-bubble{background:rgba(120,210,160,0.35);border:1px solid rgba(150,240,190,0.45);border-top-right-radius:4px}
+.msg-meta{font-size:10px;color:var(--sub);margin-top:3px;padding:0 4px}
+.chat-input-bar{display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);flex-shrink:0}
+.chat-input{flex:1;background:rgba(255,255,255,0.16);border:1px solid var(--border);border-radius:999px;padding:10px 16px;color:var(--text);font-size:15px;outline:none;min-width:0}
+.chat-input::placeholder{color:var(--sub)}
+.send-btn{background:rgba(255,255,255,0.28);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:0 16px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0}
+.x-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:12px 14px;display:flex;gap:10px}
+.x-text{font-size:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word;margin-bottom:8px}
+.x-action-btn,.log-badge,.mini-btn{background:rgba(255,255,255,0.16);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:4px 10px;font-size:11px;cursor:pointer}
+.mini-btn.danger{background:rgba(220,80,80,0.3)}
+.x-replies{margin-top:8px;padding-left:10px;border-left:2px solid rgba(255,255,255,0.25);display:flex;flex-direction:column;gap:4px}
+.x-reply-item{font-size:12px;color:var(--sub)}
+.log-detail-meta{margin-bottom:10px;flex-shrink:0}.log-detail-title{font-size:17px;font-weight:700}.log-detail-sub{font-size:12px;color:var(--sub)}
+.scene-card{position:relative;height:185px;border-radius:18px;background:rgba(255,255,255,0.12);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:14px;flex-shrink:0}
+.scene-top{display:flex;align-items:center;gap:8px}
+.scene-speaker-icon{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.28);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.scene-speaker-name{font-size:13px;font-weight:700}
+.scene-center{text-align:center;margin:auto 0}.scene-time{font-size:34px;font-weight:700;line-height:1.1;margin-bottom:6px}.scene-line{font-size:14px;font-weight:600}
+.speaker-select{background:rgba(255,255,255,0.16);border:1px solid var(--border);border-radius:999px;padding:0 10px;color:var(--text);font-size:13px;outline:none}
+.speaker-select option{background:#2d3752;color:#fff}
+.settings-section{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.settings-sec-header,.char-card-top{display:flex;justify-content:space-between;align-items:center}
+.settings-sec-title{font-size:14px;font-weight:700}
+.field-label{font-size:11px;color:var(--sub);margin-bottom:4px;display:block}
+.settings-input,.settings-textarea{width:100%;background:rgba(255,255,255,0.12);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-size:14px;font-family:inherit;outline:none}
+.settings-textarea{min-height:70px;resize:vertical}
+.settings-row-2{display:grid;grid-template-columns:1fr 72px;gap:8px}
+.char-card{background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.save-toast{font-size:12px;color:#a8f0c6;text-align:center;min-height:16px}
+</style>
 </head>
 <body>
-  <div class="phone-frame">
-
-    <!-- 1. ロック画面（ホームハブ） -->
-    <div id="screen-lock" class="screen active">
-      <div>
-        <div class="clock-area">
-          <div id="date-display" class="date-text">11月20日 金曜日</div>
-          <div id="time-display" class="time-text">09:00</div>
-        </div>
-
-        <div class="widget-card" onclick="openChat('leo')">
-          <div class="widget-header">
-            <span>💬 LINE ・ たった今</span>
-            <span>れお</span>
-          </div>
-          <div id="lock-line-preview" class="widget-body">
-            おはよ。今日も無理しすぎないようにね。
-          </div>
-        </div>
-
-        <div class="widget-card" onclick="openScreen('screen-x')">
-          <div class="widget-header">
-            <span>𝕏 タイムライン</span>
-            <span>新着あり</span>
-          </div>
-          <div id="lock-x-preview" class="widget-body">
-            最近のつぶやきや巡回ログがここに表示されます。
-          </div>
-        </div>
+<div class="phone-frame">
+  <div id="screen-lock" class="screen active">
+    <div>
+      <div class="clock-area"><div id="date-display" class="date-text"></div><div id="time-display" class="time-text"></div></div>
+      <div class="widget-card" onclick="openFirstChat()">
+        <div class="widget-header"><span>💬 LINE ・ たった今</span><span id="lock-line-sender">れお</span></div>
+        <div id="lock-line-preview" class="widget-body">おはよ。今日も無理しすぎないようにね。</div>
       </div>
-
-      <div class="app-grid">
-        <button class="app-btn" onclick="openScreen('screen-line-list')">
-          <div class="app-icon">💬</div>
-          <span class="app-label">LINE</span>
-        </button>
-        <button class="app-btn" onclick="openScreen('screen-x')">
-          <div class="app-icon">𝕏</div>
-          <span class="app-label">X</span>
-        </button>
-        <button class="app-btn" onclick="openScreen('screen-log-list')">
-          <div class="app-icon">📓</div>
-          <span class="app-label">set log</span>
-        </button>
-        <button class="app-btn" onclick="openScreen('screen-settings')">
-          <div class="app-icon">⚙️</div>
-          <span class="app-label">設定</span>
-        </button>
+      <div class="widget-card" onclick="openScreen('screen-x')">
+        <div class="widget-header"><span>𝕏 タイムライン</span><span>新着あり</span></div>
+        <div id="lock-x-preview" class="widget-body">最近のつぶやきが表示されます。</div>
       </div>
     </div>
-
-    <!-- 2-A. LINE：トーク一覧画面 -->
-    <div id="screen-line-list" class="screen">
-      <div class="sub-header">
-        <button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button>
-        <div class="sub-title">トーク</div>
-        <div style="width: 72px;"></div>
-      </div>
-
-      <div id="talk-list-container" class="talk-list"></div>
+    <div class="app-grid">
+      <button class="app-btn" onclick="openScreen('screen-line-list')"><div class="app-icon">💬</div><span class="app-label">LINE</span></button>
+      <button class="app-btn" onclick="openScreen('screen-x')"><div class="app-icon">𝕏</div><span class="app-label">X</span></button>
+      <button class="app-btn" onclick="openScreen('screen-log-list')"><div class="app-icon">📓</div><span class="app-label">set log</span></button>
+      <button class="app-btn" onclick="openScreen('screen-settings')"><div class="app-icon">⚙️</div><span class="app-label">設定</span></button>
     </div>
-
-    <!-- 2-B. LINE：個別チャット画面 -->
-    <div id="screen-line-chat" class="screen">
-      <div class="sub-header">
-        <button class="back-btn" onclick="openScreen('screen-line-list')">← 一覧</button>
-        <div id="chat-partner-name" class="sub-title">れお</div>
-        <button class="back-btn" onclick="clearCurrentChat()" style="font-size: 11px;">履歴消去</button>
-      </div>
-
-      <div id="chat-messages" class="chat-messages"></div>
-
-      <div class="chat-input-bar">
-        <input
-          id="chat-input"
-          class="chat-input"
-          type="text"
-          placeholder="メッセージを入力..."
-          onkeydown="if(event.key==='Enter') sendMessage()"
-        />
-        <button class="send-btn" onclick="sendMessage()">送信</button>
-      </div>
-    </div>
-
-    <!-- 3. X風タイムライン画面 -->
-    <div id="screen-x" class="screen">
-      <div class="sub-header">
-        <button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button>
-        <div class="sub-title">タイムライン</div>
-        <button class="back-btn" onclick="addDummyPatrolPost()" style="font-size: 11px;">+ 巡回(仮)</button>
-      </div>
-
-      <div id="x-feed" class="x-feed"></div>
-
-      <div class="chat-input-bar">
-        <input
-          id="x-input"
-          class="chat-input"
-          type="text"
-          placeholder="いま何してる？"
-          onkeydown="if(event.key==='Enter') postTweet()"
-        />
-        <button class="send-btn" onclick="postTweet()">投稿</button>
-      </div>
-    </div>
-
-    <!-- 4-A. set log：エピソード一覧画面 -->
-    <div id="screen-log-list" class="screen">
-      <div class="sub-header">
-        <button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button>
-        <div class="sub-title">set log</div>
-        <button class="back-btn" onclick="createNewLogEpisode()" style="font-size: 11px;">+ 新規</button>
-      </div>
-
-      <div id="log-ep-list" class="log-ep-list"></div>
-    </div>
-
-    <!-- 4-B. set log：シーン詳細画面（Museフォトログ風） -->
-    <div id="screen-log-detail" class="screen">
-      <div class="sub-header">
-        <button class="back-btn" onclick="openScreen('screen-log-list')">← 一覧</button>
-        <div class="sub-title">log</div>
-        <button id="log-status-btn" class="back-btn" onclick="toggleLogStatus()" style="font-size: 11px;">進行中</button>
-      </div>
-
-      <div class="log-detail-meta">
-        <div class="log-detail-title-row">
-          <div id="log-detail-title" class="log-detail-title">雨のソラマチと水族館デート</div>
-        </div>
-        <div id="log-detail-sub" class="log-detail-sub">れお ・ 11月15日（日）</div>
-      </div>
-
-      <div id="scene-list" class="scene-list"></div>
-
-      <div class="chat-input-bar">
-        <select id="scene-speaker-select" class="speaker-select">
-          <option value="れお">れお</option>
-          <option value="自分">自分</option>
-        </select>
-        <input
-          id="scene-input"
-          class="chat-input"
-          type="text"
-          placeholder="シーンのセリフを入力..."
-          onkeydown="if(event.key==='Enter') addSceneCard()"
-        />
-        <button class="send-btn" onclick="addSceneCard()">追加</button>
-      </div>
-    </div>
-
-    <!-- 5. 設定画面 -->
-    <div id="screen-settings" class="screen">
-      <div class="sub-header">
-        <button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button>
-        <div class="sub-title">設定</div>
-        <div style="width: 72px;"></div>
-      </div>
-      <div class="placeholder-box">
-        ここにキャラクター設定やプロンプト・API設定などを置いていきます。
-      </div>
-    </div>
-
   </div>
 
-  <script>
-    // 時計と日付をリアルタイム更新
-    function updateClock() {
-      const now = new Date();
-      const days = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
-      const month = now.getMonth() + 1;
-      const date = now.getDate();
-      const dayName = days[now.getDay()];
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
+  <div id="screen-line-list" class="screen">
+    <div class="sub-header"><button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button><div class="sub-title">トーク</div><div style="width:72px"></div></div>
+    <div id="talk-list-container" class="talk-list"></div>
+  </div>
 
-      document.getElementById("date-display").textContent = `${month}月${date}日 ${dayName}`;
-      document.getElementById("time-display").textContent = `${hours}:${minutes}`;
-    }
-    updateClock();
-    setInterval(updateClock, 1000);
+  <div id="screen-line-chat" class="screen">
+    <div class="sub-header"><button class="back-btn" onclick="openScreen('screen-line-list')">← 一覧</button><div id="chat-partner-name" class="sub-title">れお</div><button class="back-btn" onclick="clearCurrentChat()" style="font-size:11px">履歴消去</button></div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input-bar">
+      <input id="chat-input" class="chat-input" type="text" placeholder="メッセージを入力..." onkeydown="if(event.key==='Enter')sendMessage()" />
+      <button class="send-btn" onclick="sendMessage()">送信</button>
+    </div>
+  </div>
 
-    function getCurrentTimeStr() {
-      const now = new Date();
-      return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    }
+  <div id="screen-x" class="screen">
+    <div class="sub-header"><button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button><div class="sub-title">タイムライン</div><button class="back-btn" onclick="addDummyPatrolPost()" style="font-size:11px">+ 巡回(仮)</button></div>
+    <div id="x-feed" class="x-feed"></div>
+    <div class="chat-input-bar">
+      <input id="x-input" class="chat-input" type="text" placeholder="いま何してる？" onkeydown="if(event.key==='Enter')postTweet()" />
+      <button class="send-btn" onclick="postTweet()">投稿</button>
+    </div>
+  </div>
 
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
+  <div id="screen-log-list" class="screen">
+    <div class="sub-header"><button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button><div class="sub-title">set log</div><button class="back-btn" onclick="createNewLogEpisode()" style="font-size:11px">+ 新規</button></div>
+    <div id="log-ep-list" class="log-ep-list"></div>
+  </div>
 
-    // 画面切り替え
-    function openScreen(screenId) {
-      document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
-      document.getElementById(screenId).classList.add("active");
-      if (screenId === "screen-line-list") renderTalkList();
-      if (screenId === "screen-x") renderXFeed();
-      if (screenId === "screen-log-list") renderLogEpisodes();
-    }
+  <div id="screen-log-detail" class="screen">
+    <div class="sub-header"><button class="back-btn" onclick="openScreen('screen-log-list')">← 一覧</button><div class="sub-title">log</div><button id="log-status-btn" class="back-btn" onclick="toggleLogStatus()" style="font-size:11px">進行中</button></div>
+    <div class="log-detail-meta"><div id="log-detail-title" class="log-detail-title"></div><div id="log-detail-sub" class="log-detail-sub"></div></div>
+    <div id="scene-list" class="scene-list"></div>
+    <div class="chat-input-bar">
+      <select id="scene-speaker-select" class="speaker-select"></select>
+      <input id="scene-input" class="chat-input" type="text" placeholder="シーンのセリフを入力..." onkeydown="if(event.key==='Enter')addSceneCard()" />
+      <button class="send-btn" onclick="addSceneCard()">追加</button>
+    </div>
+  </div>
 
-    // --- LINE機能 ---
-    const characters = {
-      leo: {
-        name: "れお",
-        icon: "れ",
-        initialMessage: "おはよ。今日も無理しすぎないようにね。"
-      },
-      sub1: {
-        name: "キャラB（仮）",
-        icon: "B",
-        initialMessage: "テスト用のトーク枠だよ。"
-      }
-    };
+  <div id="screen-settings" class="screen">
+    <div class="sub-header"><button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button><div class="sub-title">設定</div><button class="back-btn" onclick="saveAllSettings()" style="font-weight:700">保存</button></div>
+    <div id="settings-toast" class="save-toast"></div>
+    <div class="settings-scroll">
+      <div class="settings-section">
+        <div class="settings-sec-header"><span class="settings-sec-title">自分のプロフィール</span></div>
+        <div class="settings-row-2">
+          <div><label class="field-label">表示名</label><input id="set-user-name" class="settings-input" type="text" /></div>
+          <div><label class="field-label">アイコン</label><input id="set-user-icon" class="settings-input" type="text" maxlength="2" /></div>
+        </div>
+        <div><label class="field-label">自分の設定メモ</label><textarea id="set-user-profile" class="settings-textarea" placeholder="呼び方や関係性など"></textarea></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-sec-header"><span class="settings-sec-title">キャラクター管理</span><button class="mini-btn" onclick="addCharacterSlot()">+ キャラ追加</button></div>
+        <div id="settings-char-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-sec-header"><span class="settings-sec-title">世界観・共通ルール</span></div>
+        <div><label class="field-label">全体プロンプト土台</label><textarea id="set-world-rule" class="settings-textarea" placeholder="メタ発言なし、自然なSNS口調など"></textarea></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    let currentPartnerId = "leo";
-    let chatData = JSON.parse(localStorage.getItem("my_space_line_chats") || "null") || {
-      leo: [{ sender: "partner", text: characters.leo.initialMessage, time: "09:00" }],
-      sub1: [{ sender: "partner", text: characters.sub1.initialMessage, time: "08:30" }]
-    };
+<script>
+function updateClock(){
+  const n=new Date(),d=["日曜日","月曜日","火曜日","水曜日","木曜日","金曜日","土曜日"];
+  document.getElementById("date-display").textContent=`${n.getMonth()+1}月${n.getDate()}日 ${d[n.getDay()]}`;
+  document.getElementById("time-display").textContent=`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
+}
+updateClock();setInterval(updateClock,1000);
+function nowStr(){const n=new Date();return `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 
-    function saveChats() {
-      localStorage.setItem("my_space_line_chats", JSON.stringify(chatData));
-      renderTalkList();
-    }
+const defSet={
+  userName:"自分",userIcon:"自",userProfile:"",worldRule:"",
+  characters:[
+    {id:"leo",name:"れお",icon:"れ",initialMessage:"おはよ。今日も無理しすぎないようにね。",prompt:"優しく落ち着いた口調。距離感が近く気遣ってくれる。"},
+    {id:"sub1",name:"キャラB（仮）",icon:"B",initialMessage:"テスト用のトーク枠だよ。",prompt:""}
+  ]
+};
+let appSettings=JSON.parse(localStorage.getItem("my_space_settings")||"null")||defSet;
+function charMap(){const m={};appSettings.characters.forEach(c=>m[c.id]=c);return m}
 
-    function renderTalkList() {
-      const container = document.getElementById("talk-list-container");
-      container.innerHTML = "";
+function openScreen(id){
+  document.querySelectorAll(".screen").forEach(e=>e.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if(id==="screen-line-list")renderTalkList();
+  if(id==="screen-x")renderXFeed();
+  if(id==="screen-log-list")renderLogEpisodes();
+  if(id==="screen-settings")renderSettings();
+}
 
-      Object.keys(characters).forEach((id) => {
-        const char = characters[id];
-        const msgs = chatData[id] || [];
-        const lastMsg = msgs[msgs.length - 1];
+function renderSettings(){
+  document.getElementById("set-user-name").value=appSettings.userName||"自分";
+  document.getElementById("set-user-icon").value=appSettings.userIcon||"自";
+  document.getElementById("set-user-profile").value=appSettings.userProfile||"";
+  document.getElementById("set-world-rule").value=appSettings.worldRule||"";
+  const list=document.getElementById("settings-char-list");list.innerHTML="";
+  appSettings.characters.forEach((c,i)=>{
+    const div=document.createElement("div");div.className="char-card";
+    div.innerHTML=`
+      <div class="char-card-top"><span style="font-size:12px;font-weight:700">キャラ ${i+1}</span>${appSettings.characters.length>1?`<button class="mini-btn danger" onclick="removeChar(${i})">削除</button>`:""}</div>
+      <div class="settings-row-2">
+        <div><label class="field-label">名前</label><input class="settings-input c-name" data-i="${i}" value="${esc(c.name)}"/></div>
+        <div><label class="field-label">アイコン</label><input class="settings-input c-icon" data-i="${i}" maxlength="2" value="${esc(c.icon)}"/></div>
+      </div>
+      <div><label class="field-label">性格・口調メモ</label><textarea class="settings-textarea c-prompt" data-i="${i}">${esc(c.prompt||"")}</textarea></div>`;
+    list.appendChild(div);
+  });
+}
+function syncSettings(){
+  appSettings.userName=document.getElementById("set-user-name").value.trim()||"自分";
+  appSettings.userIcon=document.getElementById("set-user-icon").value.trim()||"自";
+  appSettings.userProfile=document.getElementById("set-user-profile").value;
+  appSettings.worldRule=document.getElementById("set-world-rule").value;
+  document.querySelectorAll(".c-name").forEach(e=>{if(appSettings.characters[e.dataset.i])appSettings.characters[e.dataset.i].name=e.value.trim()||"キャラ"});
+  document.querySelectorAll(".c-icon").forEach(e=>{if(appSettings.characters[e.dataset.i])appSettings.characters[e.dataset.i].icon=e.value.trim()||"キ"});
+  document.querySelectorAll(".c-prompt").forEach(e=>{if(appSettings.characters[e.dataset.i])appSettings.characters[e.dataset.i].prompt=e.value});
+}
+function addCharacterSlot(){syncSettings();appSettings.characters.push({id:"c_"+Date.now(),name:"新キャラ",icon:"新",initialMessage:"よろしく。",prompt:""});renderSettings()}
+function removeChar(i){syncSettings();if(appSettings.characters.length>1){appSettings.characters.splice(i,1);renderSettings()}}
+function saveAllSettings(){
+  syncSettings();localStorage.setItem("my_space_settings",JSON.stringify(appSettings));
+  renderTalkList();updateSpeakerOpts();
+  const t=document.getElementById("settings-toast");t.textContent="設定を保存しました！";setTimeout(()=>t.textContent="",2000);
+}
 
-        const btn = document.createElement("button");
-        btn.className = "talk-item";
-        btn.onclick = () => openChat(id);
-        btn.innerHTML = `
-          <div class="talk-avatar">${char.icon}</div>
-          <div class="talk-info">
-            <div class="talk-top">
-              <span class="talk-name">${char.name}</span>
-              <span class="talk-time">${lastMsg ? lastMsg.time : ""}</span>
-            </div>
-            <div class="talk-preview">${lastMsg ? escapeHtml(lastMsg.text) : ""}</div>
-          </div>
-        `;
-        container.appendChild(btn);
-      });
+let curPartner=appSettings.characters[0]?.id||"leo";
+let chatData=JSON.parse(localStorage.getItem("my_space_line_chats")||"null")||{};
+function initChats(){appSettings.characters.forEach(c=>{if(!chatData[c.id])chatData[c.id]=[{sender:"partner",text:c.initialMessage||"こんにちは。",time:nowStr()}]})}
+initChats();
+function saveChats(){localStorage.setItem("my_space_line_chats",JSON.stringify(chatData));renderTalkList()}
+function openFirstChat(){if(appSettings.characters[0])openChat(appSettings.characters[0].id)}
+function renderTalkList(){
+  initChats();const box=document.getElementById("talk-list-container");box.innerHTML="";
+  appSettings.characters.forEach(c=>{
+    const m=chatData[c.id]||[],last=m[m.length-1];
+    const b=document.createElement("button");b.className="talk-item";b.onclick=()=>openChat(c.id);
+    b.innerHTML=`<div class="talk-avatar">${esc(c.icon)}</div><div class="talk-info"><div class="talk-top"><span class="talk-name">${esc(c.name)}</span><span class="talk-time">${last?last.time:""}</span></div><div class="talk-preview">${last?esc(last.text):""}</div></div>`;
+    box.appendChild(b);
+  });
+  const f=appSettings.characters[0];
+  if(f&&chatData[f.id]?.length){document.getElementById("lock-line-sender").textContent=f.name;document.getElementById("lock-line-preview").textContent=chatData[f.id].slice(-1)[0].text}
+}
+function openChat(id){const m=charMap();if(!m[id])return;curPartner=id;document.getElementById("chat-partner-name").textContent=m[id].name;openScreen("screen-line-chat");renderMsgs()}
+function renderMsgs(){
+  const box=document.getElementById("chat-messages");box.innerHTML="";
+  (chatData[curPartner]||[]).forEach(m=>{
+    const r=document.createElement("div");r.className=`msg-row ${m.sender}`;
+    r.innerHTML=`<div class="msg-bubble">${esc(m.text)}</div><div class="msg-meta">${m.time}</div>`;box.appendChild(r);
+  });
+  box.scrollTop=box.scrollHeight;
+}
+function sendMessage(){
+  const inp=document.getElementById("chat-input"),txt=inp.value.trim();if(!txt)return;
+  if(!chatData[curPartner])chatData[curPartner]=[];
+  chatData[curPartner].push({sender:"me",text:txt,time:nowStr()});inp.value="";saveChats();renderMsgs();
+  const tid=curPartner,cname=charMap()[tid]?.name||"相手";
+  setTimeout(()=>{chatData[tid].push({sender:"partner",text:`（${cname}・仮返信）『${txt}』受け取ったよ！`,time:nowStr()});saveChats();if(curPartner===tid)renderMsgs()},700);
+}
+function clearCurrentChat(){const c=charMap()[curPartner];chatData[curPartner]=[{sender:"partner",text:c?.initialMessage||"こんにちは。",time:nowStr()}];saveChats();renderMsgs()}
 
-      const leoMsgs = chatData.leo || [];
-      if (leoMsgs.length > 0) {
-        document.getElementById("lock-line-preview").textContent = leoMsgs[leoMsgs.length - 1].text;
-      }
-    }
+let xPosts=JSON.parse(localStorage.getItem("my_space_x_posts")||"null")||[{id:1,author:"れお",icon:"れ",text:"朝の空気ちょっとひんやりしてるね。温かい飲み物ある？",time:"08:45",likes:1,replies:["（仮リプ）れお：いいね、ちょっとほっと一息つこ。"]}];
+function saveX(){localStorage.setItem("my_space_x_posts",JSON.stringify(xPosts));renderXFeed();if(xPosts.length)document.getElementById("lock-x-preview").textContent=`${xPosts[0].author}：${xPosts[0].text}`}
+function postTweet(){
+  const inp=document.getElementById("x-input"),txt=inp.value.trim();if(!txt)return;
+  const p={id:Date.now(),author:appSettings.userName||"自分",icon:appSettings.userIcon||"自",text:txt,time:nowStr(),likes:0,replies:[]};
+  xPosts.unshift(p);inp.value="";saveX();
+  const fc=appSettings.characters[0];
+  setTimeout(()=>{const t=xPosts.find(x=>x.id===p.id);if(t&&fc){t.likes++;t.replies.push(`（仮リプ）${fc.name}：『${txt}』に反応したよ！`);saveX()}},800);
+}
+function addDummyPatrolPost(){
+  const cs=appSettings.characters,c=cs[Math.floor(Math.random()*cs.length)]||{name:"れお",icon:"れ"};
+  const s=["なんか急に甘いものか炭酸が飲みたい気分かも。","さっきまで静かだったのに、急に画面が賑やかになってきた。","今日ちょっとペース早いかも？呼吸整えよう。"];
+  xPosts.unshift({id:Date.now(),author:c.name,icon:c.icon,text:`（巡回テスト）${s[Math.floor(Math.random()*s.length)]}`,time:nowStr(),likes:0,replies:[]});saveX();
+}
+function likePost(id){const p=xPosts.find(x=>x.id===id);if(p){p.likes++;saveX()}}
+function renderXFeed(){
+  const f=document.getElementById("x-feed");f.innerHTML="";
+  xPosts.forEach(p=>{
+    const d=document.createElement("div");d.className="x-card";
+    const reps=(p.replies||[]).length?`<div class="x-replies">${p.replies.map(r=>`<div class="x-reply-item">${esc(r)}</div>`).join("")}</div>`:"";
+    d.innerHTML=`<div class="x-avatar">${esc(p.icon)}</div><div class="x-body-wrap"><div class="x-author-row"><span class="x-author">${esc(p.author)}</span><span class="x-time">${esc(p.time)}</span></div><div class="x-text">${esc(p.text)}</div><button class="x-action-btn" onclick="likePost(${p.id})">♡ ${p.likes}</button>${reps}</div>`;
+    f.appendChild(d);
+  });
+}
 
-    function openChat(partnerId) {
-      currentPartnerId = partnerId;
-      document.getElementById("chat-partner-name").textContent = characters[partnerId].name;
-      openScreen("screen-line-chat");
-      renderMessages();
-    }
+let logEps=JSON.parse(localStorage.getItem("my_space_set_logs")||"null")||[{id:"ep1",title:"雨のソラマチと水族館デート",partner:"れお",date:"11月15日（日）",status:"おわり",scenes:[{speaker:"れお",time:"16:31",text:"暗いからな、手離すなよ"},{speaker:"自分",time:"16:31",text:"くらげ、きれい…♡"}]}];
+let curEpId="ep1";
+function saveLogs(){localStorage.setItem("my_space_set_logs",JSON.stringify(logEps))}
+function updateSpeakerOpts(){
+  const sel=document.getElementById("scene-speaker-select");if(!sel)return;sel.innerHTML="";
+  appSettings.characters.forEach(c=>{const o=document.createElement("option");o.value=c.name;o.textContent=c.name;sel.appendChild(o)});
+  const u=document.createElement("option");u.value=appSettings.userName||"自分";u.textContent=appSettings.userName||"自分";sel.appendChild(u);
+}
+function renderLogEpisodes(){
+  const l=document.getElementById("log-ep-list");l.innerHTML="";
+  logEps.forEach(ep=>{
+    const b=document.createElement("button");b.className="log-ep-card";b.onclick=()=>openLogDetail(ep.id);
+    b.innerHTML=`<div><div class="log-ep-title">${esc(ep.title)}</div><div class="log-ep-meta">${esc(ep.partner)} ・ ${esc(ep.date)}（${ep.scenes.length}シーン）</div></div><span class="log-badge">${esc(ep.status)}</span>`;
+    l.appendChild(b);
+  });
+}
+function createNewLogEpisode(){
+  const title=prompt("エピソードのタイトルを入力してください","新しいお出かけログ");if(!title)return;
+  const n=new Date(),dp=appSettings.characters[0]?.name||"れお";
+  const ep={id:"ep_"+Date.now(),title:title.trim(),partner:dp,date:`${n.getMonth()+1}月${n.getDate()}日`,status:"進行中",scenes:[{speaker:dp,time:nowStr(),text:"待ち合わせ場所、着いたよ。"}]};
+  logEps.unshift(ep);saveLogs();openLogDetail(ep.id);
+}
+function openLogDetail(id){
+  curEpId=id;const ep=logEps.find(e=>e.id===id);if(!ep)return;
+  updateSpeakerOpts();document.getElementById("log-detail-title").textContent=ep.title;document.getElementById("log-detail-sub").textContent=`${ep.partner} ・ ${ep.date}`;document.getElementById("log-status-btn").textContent=ep.status;
+  openScreen("screen-log-detail");renderScenes();
+}
+function toggleLogStatus(){const ep=logEps.find(e=>e.id===curEpId);if(!ep)return;ep.status=ep.status==="おわり"?"進行中":"おわり";document.getElementById("log-status-btn").textContent=ep.status;saveLogs()}
+function renderScenes(){
+  const c=document.getElementById("scene-list");c.innerHTML="";const ep=logEps.find(e=>e.id===curEpId);if(!ep)return;
+  ep.scenes.forEach(sc=>{
+    const d=document.createElement("div");d.className="scene-card";
+    d.innerHTML=`<div class="scene-top"><div class="scene-speaker-icon">${esc(sc.speaker.slice(0,1))}</div><div class="scene-speaker-name">${esc(sc.speaker)}</div></div><div class="scene-center"><div class="scene-time">${esc(sc.time)}</div><div class="scene-line">${esc(sc.text)}</div></div><div style="height:16px"></div>`;
+    c.appendChild(d);
+  });
+  c.scrollTop=c.scrollHeight;
+}
+function addSceneCard(){
+  const ep=logEps.find(e=>e.id===curEpId),sp=document.getElementById("scene-speaker-select").value,inp=document.getElementById("scene-input"),txt=inp.value.trim();
+  if(!ep||!txt)return;ep.scenes.push({speaker:sp,time:nowStr(),text:txt});inp.value="";saveLogs();renderScenes();
+}
 
-    function renderMessages() {
-      const box = document.getElementById("chat-messages");
-      box.innerHTML = "";
-      const msgs = chatData[currentPartnerId] || [];
-
-      msgs.forEach((m) => {
-        const row = document.createElement("div");
-        row.className = `msg-row ${m.sender}`;
-        row.innerHTML = `
-          <div class="msg-bubble">${escapeHtml(m.text)}</div>
-          <div class="msg-meta">${m.time}</div>
-        `;
-        box.appendChild(row);
-      });
-
-      box.scrollTop = box.scrollHeight;
-    }
-
-    function sendMessage() {
-      const input = document.getElementById("chat-input");
-      const text = input.value.trim();
-      if (!text) return;
-
-      const timeStr = getCurrentTimeStr();
-      if (!chatData[currentPartnerId]) chatData[currentPartnerId] = [];
-      chatData[currentPartnerId].push({ sender: "me", text, time: timeStr });
-      input.value = "";
-      saveChats();
-      renderMessages();
-
-      const targetId = currentPartnerId;
-      setTimeout(() => {
-        const replyText = `（仮返信）『${text}』受け取ったよ！`;
-        chatData[targetId].push({ sender: "partner", text: replyText, time: getCurrentTimeStr() });
-        saveChats();
-        if (currentPartnerId === targetId) {
-          renderMessages();
-        }
-      }, 700);
-    }
-
-    function clearCurrentChat() {
-      const char = characters[currentPartnerId];
-      chatData[currentPartnerId] = [
-        { sender: "partner", text: char.initialMessage, time: getCurrentTimeStr() }
-      ];
-      saveChats();
-      renderMessages();
-    }
-
-    // --- X（タイムライン）機能 ---
-    let xPosts = JSON.parse(localStorage.getItem("my_space_x_posts") || "null") || [
-      {
-        id: 1,
-        author: "れお",
-        icon: "れ",
-        text: "朝の空気ちょっとひんやりしてるね。温かい飲み物ある？",
-        time: "08:45",
-        likes: 1,
-        replies: ["（仮リプ）れお：いいね、ちょっとほっと一息つこ。"]
-      }
-    ];
-
-    function saveXPosts() {
-      localStorage.setItem("my_space_x_posts", JSON.stringify(xPosts));
-      renderXFeed();
-      if (xPosts.length > 0) {
-        document.getElementById("lock-x-preview").textContent = `${xPosts[0].author}：${xPosts[0].text}`;
-      }
-    }
-
-    function postTweet() {
-      const input = document.getElementById("x-input");
-      const text = input.value.trim();
-      if (!text) return;
-
-      const newPost = {
-        id: Date.now(),
-        author: "自分",
-        icon: "自",
-        text,
-        time: getCurrentTimeStr(),
-        likes: 0,
-        replies: []
-      };
-      xPosts.unshift(newPost);
-      input.value = "";
-      saveXPosts();
-
-      setTimeout(() => {
-        const target = xPosts.find((p) => p.id === newPost.id);
-        if (target) {
-          target.likes += 1;
-          target.replies.push(`（仮リプ）れお：『${text}』に反応したよ！`);
-          saveXPosts();
-        }
-      }, 800);
-    }
-
-    function addDummyPatrolPost() {
-      const samples = [
-        "なんか急に甘いものか炭酸が飲みたい気分かも。",
-        "さっきまで静かだったのに、急に画面が賑やかになってきた。",
-        "今日ちょっとペース早いかも？呼吸整えよう。"
-      ];
-      const pick = samples[Math.floor(Math.random() * samples.length)];
-      xPosts.unshift({
-        id: Date.now(),
-        author: "れお",
-        icon: "れ",
-        text: `（巡回テスト）${pick}`,
-        time: getCurrentTimeStr(),
-        likes: 0,
-        replies: []
-      });
-      saveXPosts();
-    }
-
-    function likePost(id) {
-      const post = xPosts.find((p) => p.id === id);
-      if (post) {
-        post.likes += 1;
-        saveXPosts();
-      }
-    }
-
-    function renderXFeed() {
-      const feed = document.getElementById("x-feed");
-      feed.innerHTML = "";
-
-      xPosts.forEach((p) => {
-        const card = document.createElement("div");
-        card.className = "x-card";
-
-        const repliesHtml = (p.replies || []).length
-          ? `<div class="x-replies">${p.replies.map((r) => `<div class="x-reply-item">${escapeHtml(r)}</div>`).join("")}</div>`
-          : "";
-
-        card.innerHTML = `
-          <div class="x-avatar">${escapeHtml(p.icon)}</div>
-          <div class="x-body-wrap">
-            <div class="x-author-row">
-              <span class="x-author">${escapeHtml(p.author)}</span>
-              <span class="x-time">${escapeHtml(p.time)}</span>
-            </div>
-            <div class="x-text">${escapeHtml(p.text)}</div>
-            <div class="x-actions">
-              <button class="x-action-btn" onclick="likePost(${p.id})">♡ ${p.likes}</button>
-            </div>
-            ${repliesHtml}
-          </div>
-        `;
-        feed.appendChild(card);
-      });
-    }
-
-    // --- set log（Muse風フォトログ骨組み） ---
-    let logEpisodes = JSON.parse(localStorage.getItem("my_space_set_logs") || "null") || [
-      {
-        id: "ep1",
-        title: "雨のソラマチと水族館デート",
-        partner: "れお",
-        date: "11月15日（日）",
-        status: "おわり",
-        scenes: [
-          { speaker: "れお", time: "16:31", text: "暗いからな、手離すなよ" },
-          { speaker: "自分", time: "16:31", text: "くらげ、きれい…♡" }
-        ]
-      }
-    ];
-    let currentEpisodeId = "ep1";
-
-    function saveLogs() {
-      localStorage.setItem("my_space_set_logs", JSON.stringify(logEpisodes));
-    }
-
-    function renderLogEpisodes() {
-      const list = document.getElementById("log-ep-list");
-      list.innerHTML = "";
-
-      logEpisodes.forEach((ep) => {
-        const btn = document.createElement("button");
-        btn.className = "log-ep-card";
-        btn.onclick = () => openLogDetail(ep.id);
-        btn.innerHTML = `
-          <div>
-            <div class="log-ep-title">${escapeHtml(ep.title)}</div>
-            <div class="log-ep-meta">${escapeHtml(ep.partner)} ・ ${escapeHtml(ep.date)}（${ep.scenes.length}シーン）</div>
-          </div>
-          <span class="log-badge">${escapeHtml(ep.status)}</span>
-        `;
-        list.appendChild(btn);
-      });
-    }
-
-    function createNewLogEpisode() {
-      const title = prompt("エピソードのタイトルを入力してください", "新しいお出かけログ");
-      if (!title) return;
-      const now = new Date();
-      const dateStr = `${now.getMonth() + 1}月${now.getDate()}日`;
-      const newEp = {
-        id: "ep_" + Date.now(),
-        title: title.trim(),
-        partner: "れお",
-        date: dateStr,
-        status: "進行中",
-        scenes: [
-          { speaker: "れお", time: getCurrentTimeStr(), text: "待ち合わせ場所、着いたよ。" }
-        ]
-      };
-      logEpisodes.unshift(newEp);
-      saveLogs();
-      openLogDetail(newEp.id);
-    }
-
-    function openLogDetail(epId) {
-      currentEpisodeId = epId;
-      const ep = logEpisodes.find((e) => e.id === epId);
-      if (!ep) return;
-
-      document.getElementById("log-detail-title").textContent = ep.title;
-      document.getElementById("log-detail-sub").textContent = `${ep.partner} ・ ${ep.date}`;
-      document.getElementById("log-status-btn").textContent = ep.status;
-      openScreen("screen-log-detail");
-      renderScenes();
-    }
-
-    function toggleLogStatus() {
-      const ep = logEpisodes.find((e) => e.id === currentEpisodeId);
-      if (!ep) return;
-      ep.status = ep.status === "おわり" ? "進行中" : "おわり";
-      document.getElementById("log-status-btn").textContent = ep.status;
-      saveLogs();
-    }
-
-    function renderScenes() {
-      const container = document.getElementById("scene-list");
-      container.innerHTML = "";
-      const ep = logEpisodes.find((e) => e.id === currentEpisodeId);
-      if (!ep) return;
-
-      ep.scenes.forEach((sc) => {
-        const card = document.createElement("div");
-        card.className = "scene-card";
-        const initial = sc.speaker.slice(0, 1);
-        card.innerHTML = `
-          <div class="scene-top">
-            <div class="scene-speaker-icon">${escapeHtml(initial)}</div>
-            <div class="scene-speaker-name">${escapeHtml(sc.speaker)}</div>
-          </div>
-          <div class="scene-center">
-            <div class="scene-time">${escapeHtml(sc.time)}</div>
-            <div class="scene-line">${escapeHtml(sc.text)}</div>
-          </div>
-          <div style="height: 16px;"></div>
-        `;
-        container.appendChild(card);
-      });
-
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function addSceneCard() {
-      const ep = logEpisodes.find((e) => e.id === currentEpisodeId);
-      const speaker = document.getElementById("scene-speaker-select").value;
-      const input = document.getElementById("scene-input");
-      const text = input.value.trim();
-      if (!ep || !text) return;
-
-      ep.scenes.push({
-        speaker,
-        time: getCurrentTimeStr(),
-        text
-      });
-      input.value = "";
-      saveLogs();
-      renderScenes();
-    }
-
-    renderTalkList();
-    renderXFeed();
-    renderLogEpisodes();
-    if (xPosts.length > 0) {
-      document.getElementById("lock-x-preview").textContent = `${xPosts[0].author}：${xPosts[0].text}`;
-    }
-  </script>
+renderTalkList();renderXFeed();renderLogEpisodes();updateSpeakerOpts();
+if(xPosts.length)document.getElementById("lock-x-preview").textContent=`${xPosts[0].author}：${xPosts[0].text}`;
+</script>
 </body>
 </html>
