@@ -23,7 +23,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;bac
 .talk-list,.x-feed,.log-ep-list,.scene-list,.settings-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
 .talk-item,.log-ep-card{display:flex;align-items:center;gap:12px;background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:12px 14px;cursor:pointer;text-align:left;color:var(--text);width:100%}
 .log-ep-card{justify-content:space-between}
-.talk-avatar,.x-avatar{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.avatar-circle{border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;overflow:hidden}
+.avatar-circle img{width:100%;height:100%;object-fit:cover;display:block}
 .talk-info,.x-body-wrap{flex:1;min-width:0}
 .talk-top,.x-author-row{display:flex;justify-content:space-between;margin-bottom:4px}
 .talk-name,.x-author,.log-ep-title{font-size:15px;font-weight:700}
@@ -41,14 +42,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;bac
 .send-btn{background:rgba(255,255,255,0.28);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:0 16px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0}
 .x-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:12px 14px;display:flex;gap:10px}
 .x-text{font-size:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word;margin-bottom:8px}
-.x-action-btn,.log-badge,.mini-btn{background:rgba(255,255,255,0.16);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:4px 10px;font-size:11px;cursor:pointer}
+.x-action-btn,.log-badge,.mini-btn{background:rgba(255,255,255,0.16);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:5px 11px;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .mini-btn.danger{background:rgba(220,80,80,0.3)}
 .x-replies{margin-top:8px;padding-left:10px;border-left:2px solid rgba(255,255,255,0.25);display:flex;flex-direction:column;gap:4px}
 .x-reply-item{font-size:12px;color:var(--sub)}
 .log-detail-meta{margin-bottom:10px;flex-shrink:0}.log-detail-title{font-size:17px;font-weight:700}.log-detail-sub{font-size:12px;color:var(--sub)}
 .scene-card{position:relative;height:185px;border-radius:18px;background:rgba(255,255,255,0.12);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:14px;flex-shrink:0}
 .scene-top{display:flex;align-items:center;gap:8px}
-.scene-speaker-icon{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.28);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
 .scene-speaker-name{font-size:13px;font-weight:700}
 .scene-center{text-align:center;margin:auto 0}.scene-time{font-size:34px;font-weight:700;line-height:1.1;margin-bottom:6px}.scene-line{font-size:14px;font-weight:600}
 .speaker-select{background:rgba(255,255,255,0.16);border:1px solid var(--border);border-radius:999px;padding:0 10px;color:var(--text);font-size:13px;outline:none}
@@ -59,7 +59,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;bac
 .field-label{font-size:11px;color:var(--sub);margin-bottom:4px;display:block}
 .settings-input,.settings-textarea{width:100%;background:rgba(255,255,255,0.12);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-size:14px;font-family:inherit;outline:none}
 .settings-textarea{min-height:70px;resize:vertical}
-.settings-row-2{display:grid;grid-template-columns:1fr 72px;gap:8px}
+.avatar-picker-row{display:flex;align-items:center;gap:12px}
 .char-card{background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
 .save-toast{font-size:12px;color:#a8f0c6;text-align:center;min-height:16px}
 </style>
@@ -131,9 +131,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;bac
     <div class="settings-scroll">
       <div class="settings-section">
         <div class="settings-sec-header"><span class="settings-sec-title">自分のプロフィール</span></div>
-        <div class="settings-row-2">
-          <div><label class="field-label">表示名</label><input id="set-user-name" class="settings-input" type="text" /></div>
-          <div><label class="field-label">アイコン</label><input id="set-user-icon" class="settings-input" type="text" maxlength="2" /></div>
+        <div class="avatar-picker-row">
+          <div id="set-user-avatar-preview" class="avatar-circle" style="width:48px;height:48px;font-size:16px">自</div>
+          <div style="flex:1"><label class="field-label">表示名</label><input id="set-user-name" class="settings-input" type="text" /></div>
+          <label class="mini-btn">写真選択<input type="file" accept="image/*" style="display:none" onchange="pickAvatarImage(event,'user',0)" /></label>
         </div>
         <div><label class="field-label">自分の設定メモ</label><textarea id="set-user-profile" class="settings-textarea" placeholder="呼び方や関係性など"></textarea></div>
       </div>
@@ -142,8 +143,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;bac
         <div id="settings-char-list" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
       <div class="settings-section">
-        <div class="settings-sec-header"><span class="settings-sec-title">世界観・共通ルール</span></div>
-        <div><label class="field-label">全体プロンプト土台</label><textarea id="set-world-rule" class="settings-textarea" placeholder="メタ発言なし、自然なSNS口調など"></textarea></div>
+        <div class="settings-sec-header"><span class="settings-sec-title">世界観・共通ルール（正史要約など）</span></div>
+        <div><label class="field-label">全体プロンプト土台</label><textarea id="set-world-rule" class="settings-textarea" placeholder="正史要約や共通ルールなど"></textarea></div>
       </div>
     </div>
   </div>
@@ -160,14 +161,42 @@ function nowStr(){const n=new Date();return `${String(n.getHours()).padStart(2,"
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 
 const defSet={
-  userName:"自分",userIcon:"自",userProfile:"",worldRule:"",
+  userName:"自分",userIcon:"自",userImg:"",userProfile:"",worldRule:"",
   characters:[
-    {id:"leo",name:"れお",icon:"れ",initialMessage:"おはよ。今日も無理しすぎないようにね。",prompt:"優しく落ち着いた口調。距離感が近く気遣ってくれる。"},
-    {id:"sub1",name:"キャラB（仮）",icon:"B",initialMessage:"テスト用のトーク枠だよ。",prompt:""}
+    {id:"leo",name:"れお",icon:"れ",img:"",initialMessage:"おはよ。今日も無理しすぎないようにね。",prompt:"優しく落ち着いた口調。距離感が近く気遣ってくれる。"},
+    {id:"sub1",name:"キャラB（仮）",icon:"B",img:"",initialMessage:"テスト用のトーク枠だよ。",prompt:""}
   ]
 };
 let appSettings=JSON.parse(localStorage.getItem("my_space_settings")||"null")||defSet;
 function charMap(){const m={};appSettings.characters.forEach(c=>m[c.id]=c);return m}
+function avatarHtml(img,fallback,size=42,font=15){
+  const inner=img?`<img src="${img}" />`:esc((fallback||"？").slice(0,1));
+  return `<div class="avatar-circle" style="width:${size}px;height:${size}px;font-size:${font}px">${inner}</div>`;
+}
+function findAvatarByName(name){
+  if(name===(appSettings.userName||"自分"))return avatarHtml(appSettings.userImg,name,26,12);
+  const c=appSettings.characters.find(x=>x.name===name);
+  return avatarHtml(c?.img||"",name,26,12);
+}
+
+function pickAvatarImage(ev,type,idx){
+  const file=ev.target.files?.[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement("canvas");canvas.width=120;canvas.height=120;
+      const ctx=canvas.getContext("2d"),min=Math.min(img.width,img.height);
+      ctx.drawImage(img,(img.width-min)/2,(img.height-min)/2,min,min,0,0,120,120);
+      const dataUrl=canvas.toDataURL("image/jpeg",0.8);
+      if(type==="user"){appSettings.userImg=dataUrl}
+      else if(appSettings.characters[idx]){appSettings.characters[idx].img=dataUrl}
+      syncSettings();renderSettings();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
 function openScreen(id){
   document.querySelectorAll(".screen").forEach(e=>e.classList.remove("active"));
@@ -180,32 +209,34 @@ function openScreen(id){
 
 function renderSettings(){
   document.getElementById("set-user-name").value=appSettings.userName||"自分";
-  document.getElementById("set-user-icon").value=appSettings.userIcon||"自";
   document.getElementById("set-user-profile").value=appSettings.userProfile||"";
   document.getElementById("set-world-rule").value=appSettings.worldRule||"";
+  const uPrev=document.getElementById("set-user-avatar-preview");
+  uPrev.innerHTML=appSettings.userImg?`<img src="${appSettings.userImg}"/>`:esc((appSettings.userName||"自").slice(0,1));
+
   const list=document.getElementById("settings-char-list");list.innerHTML="";
   appSettings.characters.forEach((c,i)=>{
     const div=document.createElement("div");div.className="char-card";
     div.innerHTML=`
       <div class="char-card-top"><span style="font-size:12px;font-weight:700">キャラ ${i+1}</span>${appSettings.characters.length>1?`<button class="mini-btn danger" onclick="removeChar(${i})">削除</button>`:""}</div>
-      <div class="settings-row-2">
-        <div><label class="field-label">名前</label><input class="settings-input c-name" data-i="${i}" value="${esc(c.name)}"/></div>
-        <div><label class="field-label">アイコン</label><input class="settings-input c-icon" data-i="${i}" maxlength="2" value="${esc(c.icon)}"/></div>
+      <div class="avatar-picker-row">
+        ${avatarHtml(c.img,c.name,44,15)}
+        <div style="flex:1"><label class="field-label">名前</label><input class="settings-input c-name" data-i="${i}" value="${esc(c.name)}"/></div>
+        <label class="mini-btn">写真選択<input type="file" accept="image/*" style="display:none" onchange="pickAvatarImage(event,'char',${i})"/></label>
       </div>
-      <div><label class="field-label">性格・口調メモ</label><textarea class="settings-textarea c-prompt" data-i="${i}">${esc(c.prompt||"")}</textarea></div>`;
+      <div><label class="field-label">性格・口調メモ（persona）</label><textarea class="settings-textarea c-prompt" data-i="${i}">${esc(c.prompt||"")}</textarea></div>`;
     list.appendChild(div);
   });
 }
 function syncSettings(){
   appSettings.userName=document.getElementById("set-user-name").value.trim()||"自分";
-  appSettings.userIcon=document.getElementById("set-user-icon").value.trim()||"自";
+  appSettings.userIcon=appSettings.userName.slice(0,1);
   appSettings.userProfile=document.getElementById("set-user-profile").value;
   appSettings.worldRule=document.getElementById("set-world-rule").value;
-  document.querySelectorAll(".c-name").forEach(e=>{if(appSettings.characters[e.dataset.i])appSettings.characters[e.dataset.i].name=e.value.trim()||"キャラ"});
-  document.querySelectorAll(".c-icon").forEach(e=>{if(appSettings.characters[e.dataset.i])appSettings.characters[e.dataset.i].icon=e.value.trim()||"キ"});
+  document.querySelectorAll(".c-name").forEach(e=>{if(appSettings.characters[e.dataset.i]){const n=e.value.trim()||"キャラ";appSettings.characters[e.dataset.i].name=n;appSettings.characters[e.dataset.i].icon=n.slice(0,1)}});
   document.querySelectorAll(".c-prompt").forEach(e=>{if(appSettings.characters[e.dataset.i])appSettings.characters[e.dataset.i].prompt=e.value});
 }
-function addCharacterSlot(){syncSettings();appSettings.characters.push({id:"c_"+Date.now(),name:"新キャラ",icon:"新",initialMessage:"よろしく。",prompt:""});renderSettings()}
+function addCharacterSlot(){syncSettings();appSettings.characters.push({id:"c_"+Date.now(),name:"新キャラ",icon:"新",img:"",initialMessage:"よろしく。",prompt:""});renderSettings()}
 function removeChar(i){syncSettings();if(appSettings.characters.length>1){appSettings.characters.splice(i,1);renderSettings()}}
 function saveAllSettings(){
   syncSettings();localStorage.setItem("my_space_settings",JSON.stringify(appSettings));
@@ -224,7 +255,7 @@ function renderTalkList(){
   appSettings.characters.forEach(c=>{
     const m=chatData[c.id]||[],last=m[m.length-1];
     const b=document.createElement("button");b.className="talk-item";b.onclick=()=>openChat(c.id);
-    b.innerHTML=`<div class="talk-avatar">${esc(c.icon)}</div><div class="talk-info"><div class="talk-top"><span class="talk-name">${esc(c.name)}</span><span class="talk-time">${last?last.time:""}</span></div><div class="talk-preview">${last?esc(last.text):""}</div></div>`;
+    b.innerHTML=`${avatarHtml(c.img,c.name,44,16)}<div class="talk-info"><div class="talk-top"><span class="talk-name">${esc(c.name)}</span><span class="talk-time">${last?last.time:""}</span></div><div class="talk-preview">${last?esc(last.text):""}</div></div>`;
     box.appendChild(b);
   });
   const f=appSettings.characters[0];
@@ -267,8 +298,10 @@ function renderXFeed(){
   const f=document.getElementById("x-feed");f.innerHTML="";
   xPosts.forEach(p=>{
     const d=document.createElement("div");d.className="x-card";
+    const matchChar=appSettings.characters.find(c=>c.name===p.author);
+    const avImg=p.author===(appSettings.userName||"自分")?appSettings.userImg:(matchChar?.img||"");
     const reps=(p.replies||[]).length?`<div class="x-replies">${p.replies.map(r=>`<div class="x-reply-item">${esc(r)}</div>`).join("")}</div>`:"";
-    d.innerHTML=`<div class="x-avatar">${esc(p.icon)}</div><div class="x-body-wrap"><div class="x-author-row"><span class="x-author">${esc(p.author)}</span><span class="x-time">${esc(p.time)}</span></div><div class="x-text">${esc(p.text)}</div><button class="x-action-btn" onclick="likePost(${p.id})">♡ ${p.likes}</button>${reps}</div>`;
+    d.innerHTML=`${avatarHtml(avImg,p.author,38,14)}<div class="x-body-wrap"><div class="x-author-row"><span class="x-author">${esc(p.author)}</span><span class="x-time">${esc(p.time)}</span></div><div class="x-text">${esc(p.text)}</div><button class="x-action-btn" onclick="likePost(${p.id})">♡ ${p.likes}</button>${reps}</div>`;
     f.appendChild(d);
   });
 }
@@ -305,7 +338,7 @@ function renderScenes(){
   const c=document.getElementById("scene-list");c.innerHTML="";const ep=logEps.find(e=>e.id===curEpId);if(!ep)return;
   ep.scenes.forEach(sc=>{
     const d=document.createElement("div");d.className="scene-card";
-    d.innerHTML=`<div class="scene-top"><div class="scene-speaker-icon">${esc(sc.speaker.slice(0,1))}</div><div class="scene-speaker-name">${esc(sc.speaker)}</div></div><div class="scene-center"><div class="scene-time">${esc(sc.time)}</div><div class="scene-line">${esc(sc.text)}</div></div><div style="height:16px"></div>`;
+    d.innerHTML=`<div class="scene-top">${findAvatarByName(sc.speaker)}<div class="scene-speaker-name">${esc(sc.speaker)}</div></div><div class="scene-center"><div class="scene-time">${esc(sc.time)}</div><div class="scene-line">${esc(sc.text)}</div></div><div style="height:16px"></div>`;
     c.appendChild(d);
   });
   c.scrollTop=c.scrollHeight;
