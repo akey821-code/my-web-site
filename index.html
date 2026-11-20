@@ -222,7 +222,7 @@
       text-overflow: ellipsis;
     }
 
-    /* LINE：個別トーク（吹き出しエリア） */
+    /* LINE：個別トーク */
     .chat-messages {
       flex: 1;
       overflow-y: auto;
@@ -268,7 +268,7 @@
       padding: 0 4px;
     }
 
-    /* LINE：下部入力欄 */
+    /* 下部入力欄（LINE・X共通） */
     .chat-input-bar {
       display: flex;
       gap: 8px;
@@ -302,6 +302,87 @@
     .send-btn:active {
       transform: scale(0.95);
     }
+
+    /* X：タイムライン */
+    .x-feed {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 12px;
+    }
+    .x-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+    }
+    .x-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .x-body-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+    .x-author-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .x-author {
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .x-time {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .x-text {
+      font-size: 14px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 8px;
+    }
+    .x-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .x-action-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: var(--text-sub);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .x-replies {
+      margin-top: 8px;
+      padding-left: 10px;
+      border-left: 2px solid rgba(255, 255, 255, 0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .x-reply-item {
+      font-size: 12px;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -330,7 +411,7 @@
             <span>𝕏 タイムライン</span>
             <span>新着あり</span>
           </div>
-          <div class="widget-body">
+          <div id="lock-x-preview" class="widget-body">
             最近のつぶやきや巡回ログがここに表示されます。
           </div>
         </div>
@@ -364,9 +445,7 @@
         <div style="width: 72px;"></div>
       </div>
 
-      <div id="talk-list-container" class="talk-list">
-        <!-- JSで一覧を描画 -->
-      </div>
+      <div id="talk-list-container" class="talk-list"></div>
     </div>
 
     <!-- 2-B. LINE：個別チャット画面 -->
@@ -377,9 +456,7 @@
         <button class="back-btn" onclick="clearCurrentChat()" style="font-size: 11px;">履歴消去</button>
       </div>
 
-      <div id="chat-messages" class="chat-messages">
-        <!-- JSで吹き出しを描画 -->
-      </div>
+      <div id="chat-messages" class="chat-messages"></div>
 
       <div class="chat-input-bar">
         <input
@@ -393,15 +470,25 @@
       </div>
     </div>
 
-    <!-- 3. X風画面 -->
+    <!-- 3. X風タイムライン画面 -->
     <div id="screen-x" class="screen">
       <div class="sub-header">
         <button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button>
         <div class="sub-title">タイムライン</div>
-        <div style="width: 72px;"></div>
+        <button class="back-btn" onclick="addDummy巡回Post()" style="font-size: 11px;">+ 巡回(仮)</button>
       </div>
-      <div class="placeholder-box">
-        ここにキャラクターたちのつぶやき・リプ欄を作っていきます。
+
+      <div id="x-feed" class="x-feed"></div>
+
+      <div class="chat-input-bar">
+        <input
+          id="x-input"
+          class="chat-input"
+          type="text"
+          placeholder="いま何してる？"
+          onkeydown="if(event.key==='Enter') postTweet()"
+        />
+        <button class="send-btn" onclick="postTweet()">投稿</button>
       </div>
     </div>
 
@@ -448,7 +535,28 @@
     updateClock();
     setInterval(updateClock, 1000);
 
-    // キャラクター定義（仮データ・あとで追加編集可能）
+    function getCurrentTimeStr() {
+      const now = new Date();
+      return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    // 画面切り替え
+    function openScreen(screenId) {
+      document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
+      document.getElementById(screenId).classList.add("active");
+      if (screenId === "screen-line-list") renderTalkList();
+      if (screenId === "screen-x") renderXFeed();
+    }
+
+    // --- LINE機能 ---
     const characters = {
       leo: {
         name: "れお",
@@ -473,21 +581,6 @@
       renderTalkList();
     }
 
-    function getCurrentTimeStr() {
-      const now = new Date();
-      return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    }
-
-    // 画面切り替え
-    function openScreen(screenId) {
-      document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
-      document.getElementById(screenId).classList.add("active");
-      if (screenId === "screen-line-list") {
-        renderTalkList();
-      }
-    }
-
-    // トーク一覧を描画
     function renderTalkList() {
       const container = document.getElementById("talk-list-container");
       container.innerHTML = "";
@@ -507,20 +600,18 @@
               <span class="talk-name">${char.name}</span>
               <span class="talk-time">${lastMsg ? lastMsg.time : ""}</span>
             </div>
-            <div class="talk-preview">${lastMsg ? lastMsg.text : ""}</div>
+            <div class="talk-preview">${lastMsg ? escapeHtml(lastMsg.text) : ""}</div>
           </div>
         `;
         container.appendChild(btn);
       });
 
-      // ロック画面の最新プレビューも同期
       const leoMsgs = chatData.leo || [];
       if (leoMsgs.length > 0) {
         document.getElementById("lock-line-preview").textContent = leoMsgs[leoMsgs.length - 1].text;
       }
     }
 
-    // 個別トーク画面を開く
     function openChat(partnerId) {
       currentPartnerId = partnerId;
       document.getElementById("chat-partner-name").textContent = characters[partnerId].name;
@@ -528,7 +619,6 @@
       renderMessages();
     }
 
-    // 吹き出しを描画
     function renderMessages() {
       const box = document.getElementById("chat-messages");
       box.innerHTML = "";
@@ -547,7 +637,6 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    // メッセージ送信（今は仮のダミー返信、次の段階でAI APIに差し替え）
     function sendMessage() {
       const input = document.getElementById("chat-input");
       const text = input.value.trim();
@@ -560,7 +649,6 @@
       saveChats();
       renderMessages();
 
-      // 仮の自動返信テスト（API接続前の動作確認用）
       const targetId = currentPartnerId;
       setTimeout(() => {
         const replyText = `（仮返信）『${text}』受け取ったよ！`;
@@ -581,15 +669,118 @@
       renderMessages();
     }
 
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+    // --- X（タイムライン）機能 ---
+    let xPosts = JSON.parse(localStorage.getItem("my_space_x_posts") || "null") || [
+      {
+        id: 1,
+        author: "れお",
+        icon: "れ",
+        text: "朝の空気ちょっとひんやりしてるね。温かい飲み物ある？",
+        time: "08:45",
+        likes: 1,
+        replies: ["（仮リプ）れお：いいね、ちょっとほっと一息つこ。"]
+      }
+    ];
+
+    function saveXPosts() {
+      localStorage.setItem("my_space_x_posts", JSON.stringify(xPosts));
+      renderXFeed();
+      if (xPosts.length > 0) {
+        document.getElementById("lock-x-preview").textContent = `${xPosts[0].author}：${xPosts[0].text}`;
+      }
+    }
+
+    function postTweet() {
+      const input = document.getElementById("x-input");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const newPost = {
+        id: Date.now(),
+        author: "自分",
+        icon: "自",
+        text,
+        time: getCurrentTimeStr(),
+        likes: 0,
+        replies: []
+      };
+      xPosts.unshift(newPost);
+      input.value = "";
+      saveXPosts();
+
+      // 仮の反応（リプ）テスト
+      setTimeout(() => {
+        const target = xPosts.find((p) => p.id === newPost.id);
+        if (target) {
+          target.likes += 1;
+          target.replies.push(`（仮リプ）れお：『${text}』に反応したよ！`);
+          saveXPosts();
+        }
+      }, 800);
+    }
+
+    function addDummy巡回Post() {
+      const samples = [
+        "なんか急に甘いものか炭酸が飲みたい気分かも。",
+        "さっきまで静かだったのに、急に画面が賑やかになってきた。",
+        "今日ちょっとペース早いかも？呼吸整えよう。"
+      ];
+      const pick = samples[Math.floor(Math.random() * samples.length)];
+      xPosts.unshift({
+        id: Date.now(),
+        author: "れお",
+        icon: "れ",
+        text: `（巡回テスト）${pick}`,
+        time: getCurrentTimeStr(),
+        likes: 0,
+        replies: []
+      });
+      saveXPosts();
+    }
+
+    function likePost(id) {
+      const post = xPosts.find((p) => p.id === id);
+      if (post) {
+        post.likes += 1;
+        saveXPosts();
+      }
+    }
+
+    function renderXFeed() {
+      const feed = document.getElementById("x-feed");
+      feed.innerHTML = "";
+
+      xPosts.forEach((p) => {
+        const card = document.createElement("div");
+        card.className = "x-card";
+
+        const repliesHtml = (p.replies || []).length
+          ? `<div class="x-replies">${p.replies.map((r) => `<div class="x-reply-item">${escapeHtml(r)}</div>`).join("")}</div>`
+          : "";
+
+        card.innerHTML = `
+          <div class="x-avatar">${escapeHtml(p.icon)}</div>
+          <div class="x-body-wrap">
+            <div class="x-author-row">
+              <span class="x-author">${escapeHtml(p.author)}</span>
+              <span class="x-time">${escapeHtml(p.time)}</span>
+            </div>
+            <div class="x-text">${escapeHtml(p.text)}</div>
+            <div class="x-actions">
+              <button class="x-action-btn" onclick="likePost(${p.id})">♡ ${p.likes}</button>
+            </div>
+            ${repliesHtml}
+          </div>
+        `;
+        feed.appendChild(card);
+      });
     }
 
     renderTalkList();
+    renderXFeed();
+    if (xPosts.length > 0) {
+      document.getElementById("lock-x-preview").textContent = `${xPosts[0].author}：${xPosts[0].text}`;
+    }
   </script>
 </body>
 </html>
