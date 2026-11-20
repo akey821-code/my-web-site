@@ -150,7 +150,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;bac
   </div>
 </div>
 
-pullStateFromCloud();
 <script>
 function updateClock(){
   const n=new Date(),d=["日曜日","月曜日","火曜日","水曜日","木曜日","金曜日","土曜日"];
@@ -404,6 +403,7 @@ function addSceneCard(){
 
 renderTalkList();renderXFeed();renderLogEpisodes();updateSpeakerOpts();
 if(xPosts.length)document.getElementById("lock-x-preview").textContent=`${xPosts[0].author}：${xPosts[0].text}`;
+pullStateFromCloud();
 </script>
 </body>
 </html>
