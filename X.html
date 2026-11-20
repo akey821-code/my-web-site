@@ -94,13 +94,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;bac
 const $=id=>document.getElementById(id);
 const nowStr=()=>{const n=new Date();return`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`};
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const WORKER_URL = "https://my-space-api.akirinko821.workers.dev";
 
 const appSet=JSON.parse(localStorage.getItem("my_space_settings")||"null")||{userName:"あき",userImg:"",characters:[{id:"leo",name:"玲央",img:""}]};
 let profs=JSON.parse(localStorage.getItem("my_space_x_profs")||"null")||{};
 let posts=JSON.parse(localStorage.getItem("my_space_x_posts")||"null")||[{id:1,mode:"main",ot:"char",oid:"leo",author:"玲央",text:"朝の空気ちょっとひんやりしてるね。温かい飲み物ある？",time:"08:45",likes:1,liked:false,replies:[]}];
 let mode="main",openRep=null,curP={ot:"user",oid:"user",md:"main"},pTab="posts",editing=false;
 
-function saveAll(){localStorage.setItem("my_space_x_posts",JSON.stringify(posts));localStorage.setItem("my_space_x_profs",JSON.stringify(profs));renderTL()}
+async function syncXToCloud() {
+  try {
+    await fetch(`${WORKER_URL}/api/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ xPosts: posts }),
+    });
+  } catch (e) {
+    console.warn("syncXToCloud error:", e);
+  }
+}
+
+async function pullXFromCloud() {
+  try {
+    const res = await fetch(`${WORKER_URL}/api/sync`);
+    const data = await res.json();
+    if (data?.ok && Array.isArray(data.xPosts)) {
+      posts = data.xPosts;
+      localStorage.setItem("my_space_x_posts", JSON.stringify(posts));
+      renderTL();
+    }
+  } catch (e) {
+    console.warn("pullXFromCloud error:", e);
+  }
+}
+
+function saveAll(){
+  localStorage.setItem("my_space_x_posts",JSON.stringify(posts));
+  localStorage.setItem("my_space_x_profs",JSON.stringify(profs));
+  syncXToCloud();
+  renderTL();
+}
+
 function showSc(id){document.querySelectorAll(".screen").forEach(e=>e.classList.remove("active"));$(id).classList.add("active")}
 function avHtml(img,fb,sz,fs){return`<div class="av" style="width:${sz}px;height:${sz}px;font-size:${fs}px">${img?`<img src="${img}"/>`:esc((fb||"？").slice(0,1))}</div>`}
 
@@ -110,7 +143,6 @@ function getAcc(ot,oid,md){
   return{k,ot:"char",oid:c.id,md,name:p.name||(md==="priv"?`${c.name}（裏）`:c.name),id:md==="priv"?`@${c.id}_priv`:`@${c.id}_official`,img:p.img||c.img||"",bio:p.bio||""}
 }
 
-// 共通コンテキスト生成（LINE履歴も読み込んで齟齬を防ぐ土台）
 function getSharedContext(){
   const chats=JSON.parse(localStorage.getItem("my_space_line_chats")||"{}");
   const lineSummary=Object.values(chats).flat().slice(-8).map(m=>`${m.sender==="me"?"あき":"玲央"}:${m.text}`).join(" / ");
@@ -118,11 +150,23 @@ function getSharedContext(){
   return{lineSummary,xSummary};
 }
 
-// 将来ここをGemini API呼び出しに差し替える窓口
 function aiReact(md,ctxText,cb){
   const c=(appSet.characters||[])[0]||{id:"leo",name:"玲央"},a=getAcc("char",c.id,md);
-  const ctx=getSharedContext();
-  setTimeout(()=>cb(a,`${md==="priv"?"（AI鍵反応）":"（AI反応）"}『${ctxText}』…見てたよ。${ctx.lineSummary?"（LINE連携済）":""}`),600);
+  fetch(`${WORKER_URL}/api/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind: "x_reply",
+      mode: md === "priv" ? "private" : "public",
+      targetText: ctxText,
+    }),
+  })
+    .then(r => r.json())
+    .then(d => {
+      const rt = d?.ok && d?.result?.text ? d.result.text : `（エラー）${d?.error || "リプ生成に失敗"}`;
+      cb(a, rt);
+    })
+    .catch(() => cb(a, "通信エラーになったよ。"));
 }
 
 function setMode(m){mode=m;openRep=null;$("t-main").classList.toggle("active",m==="main");$("t-priv").classList.toggle("active",m==="priv");$("post-in").placeholder=m==="priv"?"🔒 鍵垢でつぶやく...":"本垢でいま何してる？";renderTL()}
@@ -136,8 +180,23 @@ function addPost(){
 
 function aiPatrol(){
   const cs=appSet.characters||[{id:"leo",name:"玲央"}],c=cs[Math.floor(Math.random()*cs.length)],a=getAcc("char",c.id,mode);
-  const pl=mode==="priv"?["（AI鍵自発）表では言わないけど、ちょっと気になってた。","（AI鍵自発）今なにしてるか気になって画面開いた。"]:["（AI自発）なんか急に甘いものか炭酸が飲みたい気分かも。","（AI自発）今日ちょっとペース早いかも？一息つこう。"];
-  posts.unshift({id:Date.now(),mode,ot:"char",oid:c.id,author:a.name,text:pl[Math.floor(Math.random()*pl.length)],time:nowStr(),likes:0,liked:false,replies:[]});saveAll();
+  const kind = mode === "priv" ? "x_post_private" : "x_post_public";
+  fetch(`${WORKER_URL}/api/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind,
+      mode: mode === "priv" ? "private" : "public",
+      targetText: "",
+    }),
+  })
+    .then(r => r.json())
+    .then(d => {
+      const rt = d?.ok && d?.result?.text ? d.result.text : `（エラー）${d?.error || "投稿生成に失敗"}`;
+      posts.unshift({id:Date.now(),mode,ot:"char",oid:c.id,author:a.name,text:rt,time:nowStr(),likes:0,liked:false,replies:[]});
+      saveAll();
+    })
+    .catch(() => alert("通信エラーになったよ。"));
 }
 
 function likeP(id){const p=posts.find(x=>x.id===id);if(p){p.liked=!p.liked;p.likes=Math.max(0,p.likes+(p.liked?1:-1));saveAll()}}
@@ -182,6 +241,7 @@ function pickImg(ev){const f=ev.target.files?.[0];if(!f)return;const r=new FileR
 function saveProf(){const a=getAcc(curP.ot,curP.oid,curP.md);if(!profs[a.k])profs[a.k]={};profs[a.k].name=$("pe-name").value.trim()||a.name;profs[a.k].bio=$("pe-bio").value;editing=false;$("p-edit").style.display="none";saveAll();renderProf()}
 
 renderTL();
+pullXFromCloud();
 </script>
 </body>
 </html>
