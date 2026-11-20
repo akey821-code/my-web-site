@@ -33,11 +33,11 @@
     .phone-frame {
       width: 100%;
       max-width: 430px;
-      min-height: 100dvh;
-      padding: 44px 20px 32px;
+      height: 100dvh;
+      padding: 44px 20px 24px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      overflow: hidden;
     }
 
     /* 画面切り替え制御 */
@@ -45,6 +45,7 @@
       display: none;
       flex: 1;
       flex-direction: column;
+      min-height: 0;
     }
     .screen.active {
       display: flex;
@@ -70,7 +71,7 @@
       letter-spacing: -0.02em;
     }
 
-    /* ロック画面：通知・ステータス風カード */
+    /* ロック画面：通知カード */
     .widget-card {
       background: var(--glass-bg);
       backdrop-filter: blur(14px);
@@ -79,6 +80,7 @@
       border-radius: 18px;
       padding: 14px 16px;
       margin-bottom: 12px;
+      cursor: pointer;
     }
     .widget-header {
       display: flex;
@@ -132,14 +134,15 @@
       color: var(--text-sub);
     }
 
-    /* サブ画面共通（LINE / X / set log） */
+    /* サブ画面共通ヘッダー */
     .sub-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 14px;
+      padding-bottom: 12px;
       border-bottom: 1px solid var(--glass-border);
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
     }
     .back-btn {
       background: var(--glass-bg);
@@ -162,6 +165,143 @@
       font-size: 14px;
       line-height: 1.6;
     }
+
+    /* LINE：トーク一覧 */
+    .talk-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+    .talk-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text-main);
+      width: 100%;
+    }
+    .talk-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .talk-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .talk-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .talk-name {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .talk-time {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .talk-preview {
+      font-size: 13px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* LINE：個別トーク（吹き出しエリア） */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 4px 2px 12px;
+    }
+    .msg-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 78%;
+    }
+    .msg-row.partner {
+      align-self: flex-start;
+    }
+    .msg-row.me {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.45;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .msg-row.partner .msg-bubble {
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid var(--glass-border);
+      border-top-left-radius: 4px;
+    }
+    .msg-row.me .msg-bubble {
+      background: rgba(120, 210, 160, 0.35);
+      border: 1px solid rgba(150, 240, 190, 0.45);
+      border-top-right-radius: 4px;
+    }
+    .msg-meta {
+      font-size: 10px;
+      color: var(--text-sub);
+      margin-top: 3px;
+      padding: 0 4px;
+    }
+
+    /* LINE：下部入力欄 */
+    .chat-input-bar {
+      display: flex;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--glass-border);
+      flex-shrink: 0;
+    }
+    .chat-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid var(--glass-border);
+      border-radius: 999px;
+      padding: 10px 16px;
+      color: var(--text-main);
+      font-size: 15px;
+      outline: none;
+    }
+    .chat-input::placeholder {
+      color: var(--text-sub);
+    }
+    .send-btn {
+      background: rgba(255, 255, 255, 0.28);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      border-radius: 999px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .send-btn:active {
+      transform: scale(0.95);
+    }
   </style>
 </head>
 <body>
@@ -175,17 +315,17 @@
           <div id="time-display" class="time-text">09:00</div>
         </div>
 
-        <div class="widget-card">
+        <div class="widget-card" onclick="openChat('leo')">
           <div class="widget-header">
             <span>💬 LINE ・ たった今</span>
             <span>れお</span>
           </div>
-          <div class="widget-body">
+          <div id="lock-line-preview" class="widget-body">
             おはよ。今日も無理しすぎないようにね。
           </div>
         </div>
 
-        <div class="widget-card">
+        <div class="widget-card" onclick="openScreen('screen-x')">
           <div class="widget-header">
             <span>𝕏 タイムライン</span>
             <span>新着あり</span>
@@ -197,7 +337,7 @@
       </div>
 
       <div class="app-grid">
-        <button class="app-btn" onclick="openScreen('screen-line')">
+        <button class="app-btn" onclick="openScreen('screen-line-list')">
           <div class="app-icon">💬</div>
           <span class="app-label">LINE</span>
         </button>
@@ -216,15 +356,40 @@
       </div>
     </div>
 
-    <!-- 2. LINE風画面 -->
-    <div id="screen-line" class="screen">
+    <!-- 2-A. LINE：トーク一覧画面 -->
+    <div id="screen-line-list" class="screen">
       <div class="sub-header">
         <button class="back-btn" onclick="openScreen('screen-lock')">← ロック画面</button>
-        <div class="sub-title">LINE</div>
+        <div class="sub-title">トーク</div>
         <div style="width: 72px;"></div>
       </div>
-      <div class="placeholder-box">
-        ここにトーク一覧やメッセージ画面を作っていきます。
+
+      <div id="talk-list-container" class="talk-list">
+        <!-- JSで一覧を描画 -->
+      </div>
+    </div>
+
+    <!-- 2-B. LINE：個別チャット画面 -->
+    <div id="screen-line-chat" class="screen">
+      <div class="sub-header">
+        <button class="back-btn" onclick="openScreen('screen-line-list')">← 一覧</button>
+        <div id="chat-partner-name" class="sub-title">れお</div>
+        <button class="back-btn" onclick="clearCurrentChat()" style="font-size: 11px;">履歴消去</button>
+      </div>
+
+      <div id="chat-messages" class="chat-messages">
+        <!-- JSで吹き出しを描画 -->
+      </div>
+
+      <div class="chat-input-bar">
+        <input
+          id="chat-input"
+          class="chat-input"
+          type="text"
+          placeholder="メッセージを入力..."
+          onkeydown="if(event.key==='Enter') sendMessage()"
+        />
+        <button class="send-btn" onclick="sendMessage()">送信</button>
       </div>
     </div>
 
@@ -280,17 +445,151 @@
       document.getElementById("date-display").textContent = `${month}月${date}日 ${dayName}`;
       document.getElementById("time-display").textContent = `${hours}:${minutes}`;
     }
-
     updateClock();
     setInterval(updateClock, 1000);
 
-    // 画面切り替え関数
-    function openScreen(screenId) {
-      document.querySelectorAll(".screen").forEach((el) => {
-        el.classList.remove("active");
-      });
-      document.getElementById(screenId).classList.add("active");
+    // キャラクター定義（仮データ・あとで追加編集可能）
+    const characters = {
+      leo: {
+        name: "れお",
+        icon: "れ",
+        initialMessage: "おはよ。今日も無理しすぎないようにね。"
+      },
+      sub1: {
+        name: "キャラB（仮）",
+        icon: "B",
+        initialMessage: "テスト用のトーク枠だよ。"
+      }
+    };
+
+    let currentPartnerId = "leo";
+    let chatData = JSON.parse(localStorage.getItem("my_space_line_chats") || "null") || {
+      leo: [{ sender: "partner", text: characters.leo.initialMessage, time: "09:00" }],
+      sub1: [{ sender: "partner", text: characters.sub1.initialMessage, time: "08:30" }]
+    };
+
+    function saveChats() {
+      localStorage.setItem("my_space_line_chats", JSON.stringify(chatData));
+      renderTalkList();
     }
+
+    function getCurrentTimeStr() {
+      const now = new Date();
+      return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    }
+
+    // 画面切り替え
+    function openScreen(screenId) {
+      document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
+      document.getElementById(screenId).classList.add("active");
+      if (screenId === "screen-line-list") {
+        renderTalkList();
+      }
+    }
+
+    // トーク一覧を描画
+    function renderTalkList() {
+      const container = document.getElementById("talk-list-container");
+      container.innerHTML = "";
+
+      Object.keys(characters).forEach((id) => {
+        const char = characters[id];
+        const msgs = chatData[id] || [];
+        const lastMsg = msgs[msgs.length - 1];
+
+        const btn = document.createElement("button");
+        btn.className = "talk-item";
+        btn.onclick = () => openChat(id);
+        btn.innerHTML = `
+          <div class="talk-avatar">${char.icon}</div>
+          <div class="talk-info">
+            <div class="talk-top">
+              <span class="talk-name">${char.name}</span>
+              <span class="talk-time">${lastMsg ? lastMsg.time : ""}</span>
+            </div>
+            <div class="talk-preview">${lastMsg ? lastMsg.text : ""}</div>
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+
+      // ロック画面の最新プレビューも同期
+      const leoMsgs = chatData.leo || [];
+      if (leoMsgs.length > 0) {
+        document.getElementById("lock-line-preview").textContent = leoMsgs[leoMsgs.length - 1].text;
+      }
+    }
+
+    // 個別トーク画面を開く
+    function openChat(partnerId) {
+      currentPartnerId = partnerId;
+      document.getElementById("chat-partner-name").textContent = characters[partnerId].name;
+      openScreen("screen-line-chat");
+      renderMessages();
+    }
+
+    // 吹き出しを描画
+    function renderMessages() {
+      const box = document.getElementById("chat-messages");
+      box.innerHTML = "";
+      const msgs = chatData[currentPartnerId] || [];
+
+      msgs.forEach((m) => {
+        const row = document.createElement("div");
+        row.className = `msg-row ${m.sender}`;
+        row.innerHTML = `
+          <div class="msg-bubble">${escapeHtml(m.text)}</div>
+          <div class="msg-meta">${m.time}</div>
+        `;
+        box.appendChild(row);
+      });
+
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // メッセージ送信（今は仮のダミー返信、次の段階でAI APIに差し替え）
+    function sendMessage() {
+      const input = document.getElementById("chat-input");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const timeStr = getCurrentTimeStr();
+      if (!chatData[currentPartnerId]) chatData[currentPartnerId] = [];
+      chatData[currentPartnerId].push({ sender: "me", text, time: timeStr });
+      input.value = "";
+      saveChats();
+      renderMessages();
+
+      // 仮の自動返信テスト（API接続前の動作確認用）
+      const targetId = currentPartnerId;
+      setTimeout(() => {
+        const replyText = `（仮返信）『${text}』受け取ったよ！`;
+        chatData[targetId].push({ sender: "partner", text: replyText, time: getCurrentTimeStr() });
+        saveChats();
+        if (currentPartnerId === targetId) {
+          renderMessages();
+        }
+      }, 700);
+    }
+
+    function clearCurrentChat() {
+      const char = characters[currentPartnerId];
+      chatData[currentPartnerId] = [
+        { sender: "partner", text: char.initialMessage, time: getCurrentTimeStr() }
+      ];
+      saveChats();
+      renderMessages();
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    renderTalkList();
   </script>
 </body>
 </html>
